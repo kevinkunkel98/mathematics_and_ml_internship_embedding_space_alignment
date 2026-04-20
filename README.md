@@ -49,13 +49,13 @@ Both parts share a common methodology: dimensionality reduction (UMAP/t-SNE), ge
 
 ## Team
 
-| Name | Role |
+| Name | Degree |
 |------|------|
-| [Marla Huxhold] | |
-| [Sarah Pollinger] | |
-| [Ellen Kunigk] | |
-| [Kevin Kunkel] | |
-| [Abdellah Charki] | |
+| Marla Huxhold | M.Sc. Data Science |
+| Sarah Pollinger | M.Sc. Data Science |
+| Ellen Kunigk | M.Sc. Computer Science |
+| Kevin Kunkel | M.Sc. Computer Science |
+| Abdellah Charki | M.Sc. Data Science |
 
 ---
 
