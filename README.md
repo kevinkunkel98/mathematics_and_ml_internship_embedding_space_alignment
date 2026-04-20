@@ -61,11 +61,15 @@ Both parts share a common methodology: dimensionality reduction (UMAP/t-SNE), ge
 
 ## References
 
-- Kornblith et al. (2019). *Similarity of Neural Network Representations Revisited.* ICML.
-- Ouyang et al. (2022). *Training language models to follow instructions with human feedback.* NeurIPS.
-- McInnes et al. (2018). *UMAP: Uniform Manifold Approximation and Projection.*
+- Kucukahmetler et al. (2026). *Relative Geometry of Neural Forecasters: Linking Accuracy and Alignment in Learned Latent Geometry.* [arXiv:2602.15676](https://arxiv.org/abs/2602.15676)
+- Kornblith et al. (2019). *Similarity of Neural Network Representations Revisited.* ICML. [arXiv:1905.00414](https://arxiv.org/abs/1905.00414)
+- Ouyang et al. (2022). *Training language models to follow instructions with human feedback.* NeurIPS. [arXiv:2203.02155](https://arxiv.org/abs/2203.02155)
+- Christiano et al. (2017). *Deep Reinforcement Learning from Human Preferences.* NeurIPS. [arXiv:1706.03741](https://arxiv.org/abs/1706.03741)
+- McInnes et al. (2018). *UMAP: Uniform Manifold Approximation and Projection.* [arXiv:1802.03426](https://arxiv.org/abs/1802.03426)
 - [Anthropic HH-RLHF Dataset](https://huggingface.co/datasets/Anthropic/hh-rlhf)
-
+- [awesome-rlhf](https://github.com/wassname/awesome-rlhf)
 ---
 
 *Mathematics & Machine Learning Internship — University of Leipzig, SoSe 2026*
+
+
