@@ -13,7 +13,7 @@ This project studies how training transforms the internal representation spaces 
 
 **Part 2 — Language Models:** We investigate how Reinforcement Learning from Human Feedback (RLHF) geometrically transforms the embedding space of large language models, comparing Llama-3-8B (base) with Llama-3-8B-Instruct (RLHF-aligned) to make the alignment transformation literally visible and explorable.
 
-Both parts share a common methodology: dimensionality reduction (UMAP/t-SNE), geometric analysis, and interactive visualization.
+Both parts aim to make the blackbox that are embedding representations more explainable.
 
 ---
 
@@ -49,7 +49,7 @@ Both parts share a common methodology: dimensionality reduction (UMAP/t-SNE), ge
 
 ## Team
 
-| Name | Degree |
+| Name | Program |
 |------|------|
 | Marla Huxhold | M.Sc. Data Science |
 | Sarah Pollinger | M.Sc. Data Science |
