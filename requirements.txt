@@ -1,0 +1,10 @@
+torch>=2.2.0
+transformers>=4.40.0
+datasets>=2.19.0
+h5py>=3.11.0
+umap-learn>=0.5.6
+scikit-learn>=1.4.0
+plotly>=5.21.0
+dash>=2.17.0
+numpy>=1.26.0
+pytest>=8.0.0

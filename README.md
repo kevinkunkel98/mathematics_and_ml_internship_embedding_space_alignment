@@ -47,6 +47,73 @@ Both parts aim to make the blackbox that are embedding representations more expl
 
 ---
 
+## RLHF Embedding Visualizer (Part 2)
+
+An interactive Plotly Dash dashboard that visualizes how RLHF transforms the embedding geometry of Llama-3-8B across all 33 layers. Features a layer slider, UMAP/t-SNE toggle, model toggle (base vs. instruct), and a LinearSVC separation score line chart.
+
+### Project Structure
+
+```
+app/
+  app.py            # Dash app — loads HDF5, fits projections, serves dashboard
+  callbacks.py      # Dash callback logic
+  compute.py        # UMAP, t-SNE, LinearSVC fitting + pickle cache
+  figures.py        # Plotly figure builders
+scripts/
+  extract_embeddings.py   # Offline: load models, embed hh-rlhf, save HDF5
+  generate_mock_data.py   # Generate synthetic embeddings for UI testing
+  data.py                 # hh-rlhf sampling
+  io.py                   # HDF5 read/write
+tests/                    # pytest test suite (12 tests)
+data/
+  embeddings/             # HDF5 files (gitignored — generate or extract)
+  cache/                  # Projection cache (gitignored)
+```
+
+### Setup
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### Option A — Test with mock data (no GPU required)
+
+Generates synthetic embeddings shaped identically to the real model output, with a built-in separation signal so the dashboard behaves realistically:
+
+```bash
+python scripts/generate_mock_data.py
+python app/app.py
+```
+
+Open [http://127.0.0.1:8050](http://127.0.0.1:8050).
+
+First launch fits UMAP, t-SNE, and LinearSVC for all 66 layer × model combinations (~5–10 min for mock data). Results are cached to `data/cache/` — subsequent launches start in seconds.
+
+### Option B — Real embeddings (requires GPU + HF token)
+
+Models: `meta-llama/Meta-Llama-3-8B` and `meta-llama/Meta-Llama-3-8B-Instruct` (gated — request access on Hugging Face first).
+
+```bash
+export HF_TOKEN=<your_token>
+
+python scripts/extract_embeddings.py --model meta-llama/Meta-Llama-3-8B --n-rows 500
+python scripts/extract_embeddings.py --model meta-llama/Meta-Llama-3-8B-Instruct --n-rows 500
+
+python app/app.py
+```
+
+Extraction takes ~30–60 min per model on a single A100. Reduce `--batch-size` (default 8) if you hit OOM.
+
+### Run tests
+
+```bash
+pytest tests/ -v
+```
+
+---
+
 ## Team
 
 | Name | Program |
@@ -71,5 +138,3 @@ Both parts aim to make the blackbox that are embedding representations more expl
 ---
 
 *Mathematics & Machine Learning Internship — University of Leipzig, SoSe 2026*
-
-
