@@ -15,6 +15,10 @@ This project studies how training transforms the internal representation spaces 
 
 Both parts are surfaced in a single **interactive Plotly Dash dashboard** with two tabs.
 
+| Part 1 — CKA: ResNet-18 vs ViT-B/16 | Part 2 — UMAP: RLHF Embedding Space |
+|:---:|:---:|
+| ![CKA Heatmap](assets/slides/cka_heatmap.png) | ![UMAP Scatter](assets/slides/umap_scatter.png) |
+
 ---
 
 ## Research Questions

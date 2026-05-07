@@ -220,7 +220,7 @@ app.layout = html.Div(
                 ),
                 dcc.Tab(
                     label="Part 2 — RLHF Embedding Space",
-                    value="tab-vision",
+                    value="tab-llm",
                     style=_tab_style,
                     selected_style=_selected_tab_style,
                     children=_part2_layout,
