@@ -337,6 +337,74 @@ RLHF may introduce systematic biases that manifest as geometric structure:
 *Toolkit:* PyTorch · HuggingFace Transformers · TruncatedSVD · UMAP · t-SNE · Plotly Dash
 
 // --------------------------------------------------------------------------
+= Implementation
+
+== Interactive Visualization Dashboard
+
+#v(0.3em)
+A unified *Plotly Dash* app (`app/app.py`) with two tabs — one per research part.
+
+#v(0.4em)
+#grid(columns: (1fr, 1fr), gutter: 1.0em,
+  block(fill: sand, inset: 0.8em, radius: 3pt, stroke: 0.4pt + luma(200))[
+    *Tab 1 — CNN vs ViT* \
+    #v(0.3em)
+    - CKA heatmap: pairwise layer similarity \
+    - Side-by-side CAM comparison \
+    - Class filter dropdown
+  ],
+  block(fill: sand, inset: 0.8em, radius: 3pt, stroke: 0.4pt + luma(200))[
+    *Tab 2 — RLHF Embeddings* \
+    #v(0.3em)
+    - UMAP / t-SNE scatter per layer \
+    - Layer slider + model toggle \
+    - LinearSVC score line chart
+  ],
+)
+
+#v(0.5em)
+*Offline pipeline:* extraction scripts → HDF5 → cached compute → dashboard \
+*Mock data generators* allow full UI testing without GPU or model access.
+
+// --------------------------------------------------------------------------
+== Part 1 Dashboard — CKA Heatmap
+
+#v(0.2em)
+#align(center)[
+  #image("assets/slides/cka_heatmap.png", width: 95%)
+]
+
+// --------------------------------------------------------------------------
+== Part 1 Dashboard — Class Activation Maps
+
+#v(0.2em)
+#align(center)[
+  #image("assets/slides/cam_comparison.png", width: 80%)
+]
+
+// --------------------------------------------------------------------------
+== Part 2 Dashboard — RLHF Embedding Space
+
+#v(0.2em)
+#align(center)[
+  #image("assets/slides/umap_scatter.png", width: 88%)
+]
+
+// --------------------------------------------------------------------------
+== Part 2 Dashboard — LinearSVC Separation Score
+
+#v(0.2em)
+#align(center)[
+  #image("assets/slides/svc_line.png", width: 88%)
+]
+
+#v(0.4em)
+#insight([RLHF Effect])[
+  The aligned model shows markedly higher separation accuracy in deeper layers —
+  RLHF geometrically reorganizes the embedding space to linearly encode human preference.
+]
+
+// --------------------------------------------------------------------------
 = Summary
 
 == Results at a Glance

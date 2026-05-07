@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import numpy as np
 import torch
 from pathlib import Path
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 from scripts.data import sample_hh_rlhf
 from scripts.io import save_embeddings
@@ -17,7 +17,9 @@ from scripts.io import save_embeddings
 def extract(model_id: str, n_rows: int, batch_size: int) -> None:
     token = os.environ.get("HF_TOKEN")
     if not token:
-        sys.exit("Error: HF_TOKEN environment variable not set. Export it before running.")
+        sys.exit(
+            "Error: HF_TOKEN environment variable not set. Export it before running."
+        )
 
     print(f"Loading {n_rows} rows from Anthropic/hh-rlhf...")
     texts, labels = sample_hh_rlhf(n_rows)
@@ -25,15 +27,20 @@ def extract(model_id: str, n_rows: int, batch_size: int) -> None:
     print(f"Loading model: {model_id}")
     tokenizer = AutoTokenizer.from_pretrained(model_id, token=token)
     tokenizer.pad_token = tokenizer.eos_token
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16
+    )
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
-        torch_dtype=torch.float16,
+        quantization_config=bnb_config,
         device_map="auto",
         token=token,
     )
     model.eval()
 
-    n_layers = model.config.num_hidden_layers + 1  # embedding layer + transformer layers
+    n_layers = (
+        model.config.num_hidden_layers + 1
+    )  # embedding layer + transformer layers
     all_layers: dict[int, list[np.ndarray]] = {i: [] for i in range(n_layers)}
 
     total_batches = (len(texts) + batch_size - 1) // batch_size
@@ -67,9 +74,15 @@ def extract(model_id: str, n_rows: int, batch_size: int) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Extract layer-wise embeddings from an LLM.")
+    parser = argparse.ArgumentParser(
+        description="Extract layer-wise embeddings from an LLM."
+    )
     parser.add_argument("--model", required=True, help="HuggingFace model ID")
-    parser.add_argument("--n-rows", type=int, default=500, help="Number of hh-rlhf rows to sample")
-    parser.add_argument("--batch-size", type=int, default=8, help="Inference batch size")
+    parser.add_argument(
+        "--n-rows", type=int, default=500, help="Number of hh-rlhf rows to sample"
+    )
+    parser.add_argument(
+        "--batch-size", type=int, default=8, help="Inference batch size"
+    )
     args = parser.parse_args()
     extract(args.model, args.n_rows, args.batch_size)

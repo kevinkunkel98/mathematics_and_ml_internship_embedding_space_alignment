@@ -3,7 +3,12 @@ import pytest
 import tempfile
 from pathlib import Path
 
-from scripts.io import save_embeddings, load_embeddings
+from scripts.io import (
+    save_embeddings,
+    load_embeddings,
+    save_vision_data,
+    load_vision_data,
+)
 
 
 def test_roundtrip_shapes_and_values():
@@ -34,3 +39,22 @@ def test_save_creates_parent_dirs():
         path = Path(tmpdir) / "a" / "b" / "c" / "layers.h5"
         save_embeddings(path, layers, labels)
         assert path.exists()
+
+
+def test_vision_roundtrip():
+    rng = np.random.default_rng(2)
+    activations = {i: rng.standard_normal((8, 16)).astype(np.float32) for i in range(3)}
+    labels = np.array([0, 1, 2, 3, 4, 5, 6, 7], dtype=np.int8)
+    images = rng.uniform(0, 1, (4, 32, 32, 3)).astype(np.float32)
+    cams = rng.uniform(0, 1, (4, 32, 32)).astype(np.float32)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / "model.h5"
+        save_vision_data(path, activations, labels, images, cams)
+        loaded_acts, loaded_labels, loaded_images, loaded_cams = load_vision_data(path)
+
+    assert set(loaded_acts.keys()) == {0, 1, 2}
+    assert loaded_acts[0].shape == (8, 16)
+    np.testing.assert_array_equal(loaded_labels, labels)
+    assert loaded_images.shape == (4, 32, 32, 3)
+    assert loaded_cams.shape == (4, 32, 32)

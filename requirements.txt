@@ -8,3 +8,4 @@ plotly>=5.21.0
 dash>=2.17.0
 numpy>=1.26.0
 pytest>=8.0.0
+bitsandbytes>=0.43.0
