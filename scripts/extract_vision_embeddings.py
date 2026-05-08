@@ -157,22 +157,24 @@ def _gradcam_resnet(
     targets: list[int],
     device: torch.device,
 ) -> np.ndarray:
-    """GradCAM using the final conv layer (layer4)."""
+    """GradCAM using layer3 (2×2 spatial maps for 32×32 CIFAR-10 input).
+
+    layer4 collapses to 1×1 for CIFAR-10 — not useful for spatial CAMs.
+    """
     model.eval()
-    images_norm = images_norm.to(device).requires_grad_(False)
     cams = []
 
     feat_maps = {}
     grads = {}
 
     def fwd_hook(_, __, output):
-        feat_maps["layer4"] = output
+        feat_maps["layer3"] = output
 
     def bwd_hook(_, __, grad_output):
-        grads["layer4"] = grad_output[0]
+        grads["layer3"] = grad_output[0]
 
-    fh = model.layer4.register_forward_hook(fwd_hook)
-    bh = model.layer4.register_full_backward_hook(bwd_hook)
+    fh = model.layer3.register_forward_hook(fwd_hook)
+    bh = model.layer3.register_full_backward_hook(bwd_hook)
 
     for i, img in enumerate(images_norm):
         img = img.unsqueeze(0).to(device).requires_grad_(True)
@@ -180,9 +182,11 @@ def _gradcam_resnet(
         model.zero_grad()
         logits[0, targets[i]].backward()
 
-        weights = grads["layer4"].mean(dim=[2, 3], keepdim=True)
-        cam = (weights * feat_maps["layer4"]).sum(dim=1).squeeze()
-        cam = torch.relu(cam).cpu().numpy()
+        weights = grads["layer3"].mean(dim=[2, 3], keepdim=True)
+        cam = (weights * feat_maps["layer3"]).sum(dim=1).squeeze()
+        cam = torch.relu(cam).detach().cpu().numpy()
+        if cam.ndim == 0:
+            cam = np.ones((2, 2), dtype=np.float32) * float(cam)
         cam_resized = _resize_cam(cam, 32)
         cams.append(cam_resized)
 
@@ -257,23 +261,61 @@ def _extract_vit_activations(
 def _attention_cam_vit(
     model: nn.Module, images_norm: torch.Tensor, device: torch.device
 ) -> np.ndarray:
-    """Attention rollout from all heads in last block as a proxy for CAM."""
+    """Attention rollout over all 12 encoder blocks, CLS→patch row, resized to 32×32.
+
+    Uses register_forward_pre_hook to force need_weights=True since EncoderBlock
+    calls self_attention(..., need_weights=False) by default.
+    """
     model.eval()
-    attn_maps = {}
+    n_blocks = len(model.encoder.layers)
+    # ViT-B/16 with 224×224 input → 14×14 = 196 patches + 1 CLS = 197 tokens
+    grid = 14
 
-    def _hook(_, inp, out):
-        # out is the block output; we need to re-run attention to get weights
-        # workaround: store the input to get Q/K
-        pass
+    captured: dict[int, torch.Tensor] = {}
+    hooks = []
 
-    # Use gradient-weighted attention from last block
+    for i, block in enumerate(model.encoder.layers):
+
+        def _pre(mod, args, kwargs, _i=i):
+            kwargs["need_weights"] = True
+            kwargs["average_attn_weights"] = True
+            return args, kwargs
+
+        def _post(mod, inp, out, _i=i):
+            if isinstance(out, tuple) and len(out) > 1 and out[1] is not None:
+                captured[_i] = out[1].detach().cpu()  # (1, seq, seq)
+
+        hooks.append(
+            block.self_attention.register_forward_pre_hook(_pre, with_kwargs=True)
+        )
+        hooks.append(block.self_attention.register_forward_hook(_post))
+
     cams = []
-    for img in images_norm:
-        img_t = img.unsqueeze(0).to(device)
-        # Extract attention from last block via forward with output_attentions if available
-        # Fallback: use uniform attention (mock for extraction pipeline)
-        cam = np.ones((32, 32), dtype=np.float32)
-        cams.append(cam)
+    with torch.no_grad():
+        for img in images_norm:
+            captured.clear()
+            _ = model(img.unsqueeze(0).to(device))
+
+            # Attention rollout: A_roll = prod_l( (A_l + I) / 2 )
+            seq_len = 1 + grid * grid
+            rollout = np.eye(seq_len, dtype=np.float32)
+            for i in range(n_blocks):
+                if i not in captured:
+                    continue
+                a = captured[i][0].numpy()  # (seq, seq)
+                a = (a + np.eye(seq_len)) / 2.0
+                a /= a.sum(axis=-1, keepdims=True) + 1e-8
+                rollout = a @ rollout
+
+            # CLS token row → patch attention (drop CLS→CLS at index 0)
+            cls_attn = rollout[0, 1:]  # (196,)
+            cam = cls_attn.reshape(grid, grid)
+            cam = _resize_cam(cam, 32)
+            cams.append(cam)
+
+    for h in hooks:
+        h.remove()
+
     return np.stack(cams)
 
 
@@ -288,6 +330,9 @@ def _resize_cam(cam: np.ndarray, size: int) -> np.ndarray:
 def extract(args) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
+
+    vit_n_train = args.vit_n_train if args.vit_n_train is not None else args.n_train
+    vit_epochs = args.vit_epochs if args.vit_epochs is not None else args.epochs
 
     train_loader, test_loader, cam_loader = _get_loaders(
         args.batch_size, args.n_train, args.n_test
@@ -322,20 +367,19 @@ def extract(args) -> None:
         f"Saved {len(cnn_acts)} layers × {len(cnn_labels)} samples → {out_dir}/resnet18.h5"
     )
 
+    del resnet, cnn_acts, train_loader, test_loader
+    torch.cuda.empty_cache()
+
     # ── ViT-B/16 ─────────────────────────────────────────────────────────────
     print("\n=== ViT-B/16 ===")
-    # ViT-B/16 expects 224×224 — fine-tune with upsampling
+    vit_batch = max(8, args.batch_size // 4)  # 224×224 images need more VRAM
     vit_train_tf = transforms.Compose(
         [
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
             transforms.Resize(224),
             transforms.ToTensor(),
-            transforms.Normalize(
-                _CIFAR10_MEAN * (224 // 32), _CIFAR10_STD * (224 // 32)
-            )
-            if False
-            else transforms.Normalize(_CIFAR10_MEAN, _CIFAR10_STD),
+            transforms.Normalize(_CIFAR10_MEAN, _CIFAR10_STD),
         ]
     )
     vit_test_tf = transforms.Compose(
@@ -348,21 +392,21 @@ def extract(args) -> None:
     vit_train_ds = datasets.CIFAR10("data/cifar10", train=True, transform=vit_train_tf)
     vit_test_ds = datasets.CIFAR10("data/cifar10", train=False, transform=vit_test_tf)
     vit_train_loader = DataLoader(
-        Subset(vit_train_ds, range(args.n_train)),
-        batch_size=args.batch_size,
+        Subset(vit_train_ds, range(vit_n_train)),
+        batch_size=vit_batch,
         shuffle=True,
         num_workers=4,
     )
     vit_test_loader = DataLoader(
         Subset(vit_test_ds, range(args.n_test)),
-        batch_size=args.batch_size,
+        batch_size=vit_batch,
         shuffle=False,
         num_workers=4,
     )
 
     vit = _build_vit(device)
-    print(f"Fine-tuning for {args.epochs} epochs...")
-    _train(vit, vit_train_loader, args.epochs, device)
+    print(f"Fine-tuning for {vit_epochs} epochs on {vit_n_train} samples...")
+    _train(vit, vit_train_loader, vit_epochs, device)
 
     print("Extracting activations...")
     vit_acts, vit_labels = _extract_vit_activations(vit, vit_test_loader, device)
@@ -383,8 +427,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Fine-tune CNN+ViT on CIFAR-10 and extract embeddings."
     )
-    parser.add_argument("--epochs", type=int, default=10, help="Fine-tuning epochs")
-    parser.add_argument("--n-train", type=int, default=10000, help="Training samples")
+    parser.add_argument(
+        "--epochs", type=int, default=10, help="Fine-tuning epochs (ResNet)"
+    )
+    parser.add_argument(
+        "--n-train", type=int, default=10000, help="Training samples (ResNet)"
+    )
     parser.add_argument(
         "--n-test",
         type=int,
@@ -392,4 +440,16 @@ if __name__ == "__main__":
         help="Test samples for activation extraction",
     )
     parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument(
+        "--vit-epochs",
+        type=int,
+        default=None,
+        help="ViT fine-tuning epochs (defaults to --epochs)",
+    )
+    parser.add_argument(
+        "--vit-n-train",
+        type=int,
+        default=None,
+        help="ViT training samples (defaults to --n-train)",
+    )
     extract(parser.parse_args())
