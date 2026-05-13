@@ -33,7 +33,22 @@ Both parts are surfaced in a single **interactive Plotly Dash dashboard** with t
 
 ## Datasets
 
-- **CIFAR-10** — Standard image classification benchmark
+Datasets are **not included in this repository** and must be downloaded manually before running the extraction scripts.
+
+### CIFAR-10
+
+Download and extract into `data/cifar10/`:
+
+```bash
+mkdir -p data/cifar10
+curl -o data/cifar10/cifar-10-python.tar.gz https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz
+tar -xzf data/cifar10/cifar-10-python.tar.gz -C data/cifar10/
+```
+
+### HuggingFace Datasets (auto-downloaded)
+
+The following datasets are fetched automatically by the extraction scripts via the `datasets` library — no manual step required:
+
 - [`Anthropic/hh-rlhf`](https://huggingface.co/datasets/Anthropic/hh-rlhf) — Human preference pairs (chosen vs. rejected responses)
 - [`OpenAssistant/oasst1`](https://huggingface.co/datasets/OpenAssistant/oasst1) — Open-source preference dataset
 
