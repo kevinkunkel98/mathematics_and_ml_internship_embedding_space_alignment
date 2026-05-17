@@ -1,0 +1,20 @@
+model:
+  architecture: "custom_cnn"  # options: 'custom_cnn', 'resnet18'
+
+training:
+  epochs: 2
+  lr: 0.01 # learning rate
+  wd: 0.0 # l2 regularization
+  patience_earlystopping: 5 # maximum epochs without improvement of validation loss
+  patience_lr: 5 # epochs without improvement before reducing lr
+  factor: 0.5 # factor to reduce lr by # TODO check if used
+  batch_size: 16
+  device: cuda  # options: 'cuda' or 'cpu'
+  seed: 42
+
+data:
+  input_channels: 3  # RGB images
+  strip_percent: 40  # percentage of images to be used
+
+analysis:
+  cnn_run: experiments/cnn_petfaces/20260215_145230 

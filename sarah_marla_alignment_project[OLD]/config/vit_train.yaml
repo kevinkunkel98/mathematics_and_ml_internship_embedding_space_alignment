@@ -1,0 +1,29 @@
+model:
+    patches_size: 7 
+    embedding_dim: 15
+    num_encoder_blocks: 3
+    num_attention_heads: 3
+    factor_hidden_size_encoder: 2 
+    dropout_en: 0.5
+    num_classes: 10
+    model_path: "./models/ViT.pth"
+    architecture: "imagenet_pretrained_vit" # alt: "imagenet_pretrained_vit", "custom_vit"
+
+training: 
+    batch_size: 64 
+    lr: 0.01 
+    num_epochs: 100
+    patience_earlystopping: 10
+    patience_lr: 5
+    factor: 0.5
+    device: cpu  # options: 'cuda' or 'cpu'
+    wd: 0.0 # l2 regularization
+    seed: 42
+
+data:
+    images_size: [224, 224, 3]
+    strip_percent: 40
+    path_data: "./data/cat/cat.csv" 
+
+analysis:
+  vit_run: experiments/vit_petfaces/20260215_190413
