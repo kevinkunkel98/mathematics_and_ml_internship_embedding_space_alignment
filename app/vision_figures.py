@@ -100,6 +100,57 @@ def build_cam_comparison(
     return fig
 
 
+_CIFAR10_COLORS = [
+    "#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
+    "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52",
+]
+
+
+def build_vision_umap(
+    Z: np.ndarray,
+    labels: np.ndarray,
+    title: str,
+) -> go.Figure:
+    """Scatter plot of UMAP-projected activations, coloured by CIFAR-10 class.
+
+    Z:      (N, 2) float32
+    labels: (N,)  int  — CIFAR-10 class indices
+    """
+    fig = go.Figure()
+    n = min(len(Z), len(labels))
+    Z, labels = Z[:n], labels[:n]
+
+    for cls_idx, cls_name in enumerate(_CIFAR10_CLASSES):
+        mask = labels == cls_idx
+        if not mask.any():
+            continue
+        fig.add_trace(
+            go.Scatter(
+                x=Z[mask, 0],
+                y=Z[mask, 1],
+                mode="markers",
+                name=cls_name,
+                marker=dict(
+                    size=5,
+                    color=_CIFAR10_COLORS[cls_idx],
+                    opacity=0.8,
+                ),
+                hovertemplate=f"{cls_name}<extra></extra>",
+            )
+        )
+
+    fig.update_layout(
+        title=title,
+        template="plotly_dark",
+        xaxis=dict(showticklabels=False, title="UMAP 1"),
+        yaxis=dict(showticklabels=False, title="UMAP 2"),
+        legend=dict(itemsizing="constant", title="Class"),
+        margin=dict(l=40, r=20, t=60, b=40),
+        height=460,
+    )
+    return fig
+
+
 def _cam_heatmap_trace(img_rgb: np.ndarray, cam: np.ndarray) -> go.Heatmap:
     """Overlay CAM as a semi-transparent heatmap on top of image dims."""
     cam_norm = (cam - cam.min()) / (cam.max() - cam.min() + 1e-8)

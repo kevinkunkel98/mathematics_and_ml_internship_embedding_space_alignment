@@ -1,6 +1,7 @@
 import pickle
 import numpy as np
 from pathlib import Path
+import umap as umap_lib
 
 CACHE_DIR = Path("data/cache")
 
@@ -78,4 +79,41 @@ def fit_vision(
         pickle.dump(result, f)
 
     print(f"CKA matrix shape: {cka_matrix.shape}")
+    return result
+
+
+def fit_vision_umap(
+    cnn_activations: dict[int, np.ndarray],
+    vit_activations: dict[int, np.ndarray],
+    max_samples: int = 1000,
+) -> dict:
+    """Fit UMAP on each layer's activations for CNN and ViT.
+
+    Returns {"resnet18": {layer_idx: (N, 2)}, "vit_b16": {layer_idx: (N, 2)}}.
+    """
+    cache = CACHE_DIR / "vision" / "umap.pkl"
+    if cache.exists():
+        with open(cache, "rb") as f:
+            return pickle.load(f)
+
+    print("Fitting vision UMAP...")
+    result: dict[str, dict[int, np.ndarray]] = {}
+    for slug, acts in [("resnet18", cnn_activations), ("vit_b16", vit_activations)]:
+        result[slug] = {}
+        for layer_idx, X in sorted(acts.items()):
+            X = X[:max_samples].astype(np.float32)
+            reducer = umap_lib.UMAP(
+                n_neighbors=min(15, X.shape[0] - 1),
+                min_dist=0.1,
+                n_components=2,
+                random_state=42,
+                low_memory=True,
+            )
+            result[slug][layer_idx] = reducer.fit_transform(X).astype(np.float32)
+            print(f"  [{slug}] layer {layer_idx} done")
+
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    with open(cache, "wb") as f:
+        pickle.dump(result, f)
+
     return result

@@ -7,7 +7,7 @@ from dash import Dash, dcc, html
 
 from scripts.io import load_embeddings, load_vision_data
 from app.compute import fit_all
-from app.vision_compute import fit_vision
+from app.vision_compute import fit_vision, fit_vision_umap
 
 _CIFAR10_CLASSES = [
     "airplane",
@@ -75,12 +75,23 @@ def _load_vision_data() -> dict | None:
         cka = fit_vision(
             vision["resnet18"]["activations"], vision["vit_b16"]["activations"]
         )
+
+        print("Fitting vision UMAP...")
+        umap_data = fit_vision_umap(
+            vision["resnet18"]["activations"], vision["vit_b16"]["activations"]
+        )
+
         return {
             "cka": cka,
             "labels": vision["resnet18"]["labels"],
             "images": vision["resnet18"]["images"],
             "cnn_cams": vision["resnet18"]["cams"],
             "vit_cams": vision["vit_b16"]["cams"],
+            "umap": umap_data,
+            "n_layers": {
+                slug: max(vision[slug]["activations"].keys())
+                for slug in _VISION_MODELS
+            },
         }
     except FileNotFoundError as e:
         print(f"[vision] Skipping Part 1 — {e}")
@@ -169,8 +180,67 @@ _part2_layout = html.Div(
 # ── Part 1 layout ─────────────────────────────────────────────────────────────
 
 if VISION_DATA is not None:
+    _vision_max_layer = max(VISION_DATA["n_layers"].values())
+    _vision_layer_marks = {
+        i: str(i)
+        for i in range(0, _vision_max_layer + 1, max(1, _vision_max_layer // 6))
+    }
+    _vision_layer_marks[_vision_max_layer] = str(_vision_max_layer)
+
     _part1_layout = html.Div(
         [
+            # ── CKA heatmap ───────────────────────────────────────────────────
+            dcc.Graph(id="cka-heatmap", style={"height": "480px"}),
+
+            # ── Vision UMAP ───────────────────────────────────────────────────
+            html.Hr(style={"margin": "24px 0", "borderColor": "#333"}),
+            html.H4(
+                "Layer Activation Space (UMAP)",
+                style={"marginBottom": "12px"},
+            ),
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            html.Label("Model", style={"fontWeight": "bold"}),
+                            dcc.RadioItems(
+                                id="vision-model-selector",
+                                options=[
+                                    {"label": "ResNet-18", "value": "resnet18"},
+                                    {"label": "ViT-B/16", "value": "vit_b16"},
+                                ],
+                                value="resnet18",
+                                inline=True,
+                                inputStyle={"marginRight": "4px"},
+                                labelStyle={"marginRight": "16px"},
+                            ),
+                        ],
+                        style={"marginBottom": "12px"},
+                    ),
+                    html.Div(
+                        [
+                            html.Label(
+                                id="vision-layer-label",
+                                style={"fontWeight": "bold"},
+                            ),
+                            dcc.Slider(
+                                id="vision-layer-slider",
+                                min=0,
+                                max=_vision_max_layer,
+                                step=1,
+                                value=0,
+                                marks=_vision_layer_marks,
+                                tooltip={"placement": "bottom", "always_visible": False},
+                            ),
+                        ],
+                        style={"marginBottom": "8px"},
+                    ),
+                ]
+            ),
+            dcc.Graph(id="vision-umap", style={"height": "460px"}),
+
+            # ── CAM comparison ────────────────────────────────────────────────
+            html.Hr(style={"margin": "24px 0", "borderColor": "#333"}),
             html.Div(
                 [
                     html.Label("Filter CAMs by class", style={"fontWeight": "bold"}),
@@ -186,9 +256,8 @@ if VISION_DATA is not None:
                         style={"width": "240px", "color": "#111"},
                     ),
                 ],
-                style={"marginBottom": "24px"},
+                style={"marginBottom": "16px"},
             ),
-            dcc.Graph(id="cka-heatmap", style={"height": "480px"}),
             dcc.Graph(id="cam-comparison"),
         ]
     )
