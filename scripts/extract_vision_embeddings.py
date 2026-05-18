@@ -85,10 +85,11 @@ def _train(
         for X, y in loader:
             X, y = X.to(device), y.to(device)
             opt.zero_grad()
-            loss = criterion(model(X), y)
+            logits = model(X)
+            loss = criterion(logits, y)
             loss.backward()
             opt.step()
-            correct += (model(X).argmax(1) == y).sum().item()
+            correct += (logits.argmax(1) == y).sum().item()
             total += len(y)
         sched.step()
         print(f"  epoch {epoch}/{epochs}  train acc: {correct / total:.3f}")
@@ -342,82 +343,86 @@ def extract(args) -> None:
     raw_images = raw_images_batch[0].numpy().transpose(0, 2, 3, 1)  # (N, 32, 32, 3)
     cam_labels_raw = raw_images_batch[1].tolist()
 
-    out_dir = Path("data/vision")
-
-    # ── ResNet-18 ────────────────────────────────────────────────────────────
-    print("\n=== ResNet-18 ===")
-    resnet = _build_resnet(device)
-    print(f"Fine-tuning for {args.epochs} epochs...")
-    _train(resnet, train_loader, args.epochs, device)
-
-    print("Extracting activations...")
-    cnn_acts, cnn_labels = _extract_resnet_activations(resnet, test_loader, device)
-
-    print("Computing GradCAM...")
     norm_tf = transforms.Normalize(_CIFAR10_MEAN, _CIFAR10_STD)
     cam_images_norm = torch.stack(
         [norm_tf(torch.from_numpy(img.transpose(2, 0, 1))) for img in raw_images]
     )
-    cnn_cams = _gradcam_resnet(resnet, cam_images_norm, cam_labels_raw, device)
 
-    save_vision_data(
-        out_dir / "resnet18.h5", cnn_acts, cnn_labels, raw_images, cnn_cams
-    )
-    print(
-        f"Saved {len(cnn_acts)} layers × {len(cnn_labels)} samples → {out_dir}/resnet18.h5"
-    )
+    out_dir = Path("data/vision")
 
-    del resnet, cnn_acts, train_loader, test_loader
-    torch.cuda.empty_cache()
+    # ── ResNet-18 ────────────────────────────────────────────────────────────
+    if args.only in ("resnet", "both"):
+        print("\n=== ResNet-18 ===")
+        resnet = _build_resnet(device)
+        print(f"Fine-tuning for {args.epochs} epochs...")
+        _train(resnet, train_loader, args.epochs, device)
+
+        print("Extracting activations...")
+        cnn_acts, cnn_labels = _extract_resnet_activations(resnet, test_loader, device)
+
+        print("Computing GradCAM...")
+        cnn_cams = _gradcam_resnet(resnet, cam_images_norm, cam_labels_raw, device)
+
+        save_vision_data(
+            out_dir / "resnet18.h5", cnn_acts, cnn_labels, raw_images, cnn_cams
+        )
+        print(
+            f"Saved {len(cnn_acts)} layers × {len(cnn_labels)} samples → {out_dir}/resnet18.h5"
+        )
+        del resnet, cnn_acts
+        torch.cuda.empty_cache()
+
+    del train_loader, test_loader
 
     # ── ViT-B/16 ─────────────────────────────────────────────────────────────
-    print("\n=== ViT-B/16 ===")
-    vit_batch = max(8, args.batch_size // 4)  # 224×224 images need more VRAM
-    vit_train_tf = transforms.Compose(
-        [
-            transforms.RandomCrop(32, padding=4),
-            transforms.RandomHorizontalFlip(),
-            transforms.Resize(224),
-            transforms.ToTensor(),
-            transforms.Normalize(_CIFAR10_MEAN, _CIFAR10_STD),
-        ]
-    )
-    vit_test_tf = transforms.Compose(
-        [
-            transforms.Resize(224),
-            transforms.ToTensor(),
-            transforms.Normalize(_CIFAR10_MEAN, _CIFAR10_STD),
-        ]
-    )
-    vit_train_ds = datasets.CIFAR10("data/cifar10", train=True, transform=vit_train_tf)
-    vit_test_ds = datasets.CIFAR10("data/cifar10", train=False, transform=vit_test_tf)
-    vit_train_loader = DataLoader(
-        Subset(vit_train_ds, range(vit_n_train)),
-        batch_size=vit_batch,
-        shuffle=True,
-        num_workers=4,
-    )
-    vit_test_loader = DataLoader(
-        Subset(vit_test_ds, range(args.n_test)),
-        batch_size=vit_batch,
-        shuffle=False,
-        num_workers=4,
-    )
+    if args.only in ("vit", "both"):
+        print("\n=== ViT-B/16 ===")
+        vit_batch = max(8, args.batch_size // 4)  # 224×224 images need more VRAM
+        vit_train_tf = transforms.Compose(
+            [
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.Resize(224),
+                transforms.ToTensor(),
+                transforms.Normalize(_CIFAR10_MEAN, _CIFAR10_STD),
+            ]
+        )
+        vit_test_tf = transforms.Compose(
+            [
+                transforms.Resize(224),
+                transforms.ToTensor(),
+                transforms.Normalize(_CIFAR10_MEAN, _CIFAR10_STD),
+            ]
+        )
+        vit_train_ds = datasets.CIFAR10("data/cifar10", train=True, transform=vit_train_tf)
+        vit_test_ds = datasets.CIFAR10("data/cifar10", train=False, transform=vit_test_tf)
+        vit_train_loader = DataLoader(
+            Subset(vit_train_ds, range(vit_n_train)),
+            batch_size=vit_batch,
+            shuffle=True,
+            num_workers=4,
+        )
+        vit_test_loader = DataLoader(
+            Subset(vit_test_ds, range(args.n_test)),
+            batch_size=vit_batch,
+            shuffle=False,
+            num_workers=4,
+        )
 
-    vit = _build_vit(device)
-    print(f"Fine-tuning for {vit_epochs} epochs on {vit_n_train} samples...")
-    _train(vit, vit_train_loader, vit_epochs, device)
+        vit = _build_vit(device)
+        print(f"Fine-tuning for {vit_epochs} epochs on {vit_n_train} samples...")
+        _train(vit, vit_train_loader, vit_epochs, device)
 
-    print("Extracting activations...")
-    vit_acts, vit_labels = _extract_vit_activations(vit, vit_test_loader, device)
+        print("Extracting activations...")
+        vit_acts, vit_labels = _extract_vit_activations(vit, vit_test_loader, device)
 
-    print("Computing attention maps...")
-    vit_cams = _attention_cam_vit(vit, cam_images_norm, device)
+        print("Computing attention maps...")
+        vit_cams = _attention_cam_vit(vit, cam_images_norm, device)
 
-    save_vision_data(out_dir / "vit_b16.h5", vit_acts, vit_labels, raw_images, vit_cams)
-    print(
-        f"Saved {len(vit_acts)} layers × {len(vit_labels)} samples → {out_dir}/vit_b16.h5"
-    )
+        save_vision_data(out_dir / "vit_b16.h5", vit_acts, vit_labels, raw_images, vit_cams)
+        print(
+            f"Saved {len(vit_acts)} layers × {len(vit_labels)} samples → {out_dir}/vit_b16.h5"
+        )
 
     print("\nDone. Launch the dashboard with:")
     print("  python app/vision_app.py")
@@ -451,5 +456,11 @@ if __name__ == "__main__":
         type=int,
         default=None,
         help="ViT training samples (defaults to --n-train)",
+    )
+    parser.add_argument(
+        "--only",
+        choices=("resnet", "vit", "both"),
+        default="both",
+        help="Which model to run (default: both)",
     )
     extract(parser.parse_args())
