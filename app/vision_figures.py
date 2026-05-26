@@ -1,19 +1,9 @@
 import numpy as np
+import plotly.colors
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-_CIFAR10_CLASSES = [
-    "airplane",
-    "automobile",
-    "bird",
-    "cat",
-    "deer",
-    "dog",
-    "frog",
-    "horse",
-    "ship",
-    "truck",
-]
+_DEFAULT_COLORS = plotly.colors.qualitative.Plotly
 
 
 def build_cka_heatmap(
@@ -50,12 +40,13 @@ def build_cam_comparison(
     labels: np.ndarray,
     selected_class: int | None,
     n_show: int = 4,
+    class_names: list[str] | None = None,
 ) -> go.Figure:
     """Side-by-side CAM overlay for CNN vs ViT for up to n_show images.
 
-    images:   (N, 32, 32, 3) float32 [0,1]
-    cnn_cams: (N, 32, 32) float32
-    vit_cams: (N, 32, 32) float32
+    images:   (N, H, W, 3) float32 [0,1]
+    cnn_cams: (N, H, W) float32
+    vit_cams: (N, H, W) float32
     labels:   (N,) int
     """
     if selected_class is not None:
@@ -69,11 +60,16 @@ def build_cam_comparison(
         fig.update_layout(template="plotly_dark", title="No samples for selected class")
         return fig
 
+    def _label_name(i):
+        if class_names is not None and labels[i] < len(class_names):
+            return class_names[labels[i]]
+        return str(labels[i])
+
     fig = make_subplots(
         rows=n,
         cols=3,
         column_titles=["Image", "ResNet-18 CAM", "ViT-B/16 CAM"],
-        row_titles=[_CIFAR10_CLASSES[labels[i]] for i in idxs],
+        row_titles=[_label_name(i) for i in idxs],
         horizontal_spacing=0.05,
         vertical_spacing=0.05,
     )
@@ -100,41 +96,42 @@ def build_cam_comparison(
     return fig
 
 
-_CIFAR10_COLORS = [
-    "#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
-    "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52",
-]
+_DEFAULT_COLORS = plotly.colors.qualitative.Plotly
 
 
 def build_vision_umap(
     Z: np.ndarray,
     labels: np.ndarray,
     title: str,
+    class_names: list[str] | None = None,
 ) -> go.Figure:
-    """Scatter plot of UMAP-projected activations, coloured by CIFAR-10 class.
+    """Scatter plot of UMAP-projected activations, coloured by class.
 
-    Z:      (N, 2) float32
-    labels: (N,)  int  — CIFAR-10 class indices
+    Z:           (N, 2) float32
+    labels:      (N,)  int  — class indices
+    class_names: optional list of string class names; indices used as fallback
     """
     fig = go.Figure()
     n = min(len(Z), len(labels))
     Z, labels = Z[:n], labels[:n]
 
-    for cls_idx, cls_name in enumerate(_CIFAR10_CLASSES):
+    unique_classes = sorted(set(labels.tolist()))
+    colors = _DEFAULT_COLORS
+    for cls_idx in unique_classes:
+        cls_name = (
+            class_names[cls_idx]
+            if (class_names and cls_idx < len(class_names))
+            else str(cls_idx)
+        )
+        color = colors[cls_idx % len(colors)]
         mask = labels == cls_idx
-        if not mask.any():
-            continue
         fig.add_trace(
             go.Scatter(
                 x=Z[mask, 0],
                 y=Z[mask, 1],
                 mode="markers",
                 name=cls_name,
-                marker=dict(
-                    size=5,
-                    color=_CIFAR10_COLORS[cls_idx],
-                    opacity=0.8,
-                ),
+                marker=dict(size=5, color=color, opacity=0.8),
                 hovertemplate=f"{cls_name}<extra></extra>",
             )
         )

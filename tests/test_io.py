@@ -51,10 +51,31 @@ def test_vision_roundtrip():
     with tempfile.TemporaryDirectory() as tmpdir:
         path = Path(tmpdir) / "model.h5"
         save_vision_data(path, activations, labels, images, cams)
-        loaded_acts, loaded_labels, loaded_images, loaded_cams = load_vision_data(path)
+        loaded_acts, loaded_labels, loaded_images, loaded_cams, loaded_class_names = (
+            load_vision_data(path)
+        )
 
     assert set(loaded_acts.keys()) == {0, 1, 2}
     assert loaded_acts[0].shape == (8, 16)
     np.testing.assert_array_equal(loaded_labels, labels)
     assert loaded_images.shape == (4, 32, 32, 3)
     assert loaded_cams.shape == (4, 32, 32)
+    assert loaded_class_names is None
+
+
+def test_vision_roundtrip_with_class_names():
+    rng = np.random.default_rng(3)
+    activations = {0: rng.standard_normal((4, 8)).astype(np.float32)}
+    labels = np.array([0, 1, 2, 3], dtype=np.int8)
+    images = rng.uniform(0, 1, (4, 8, 8, 3)).astype(np.float32)
+    cams = rng.uniform(0, 1, (4, 8, 8)).astype(np.float32)
+    class_names = ["cat", "dog", "bird"]
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / "model.h5"
+        save_vision_data(
+            path, activations, labels, images, cams, class_names=class_names
+        )
+        _, _, _, _, loaded_names = load_vision_data(path)
+
+    assert loaded_names == class_names

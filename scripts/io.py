@@ -32,13 +32,15 @@ def save_vision_data(
     labels: np.ndarray,
     images: np.ndarray,
     cams: np.ndarray,
+    class_names: list[str] | None = None,
 ) -> None:
     """Save vision model data: layer activations, class labels, sample images, CAM heatmaps.
 
-    activations: layer_idx -> (n_samples, dim)
-    labels:      (n_samples,) int8 — CIFAR-10 class indices
-    images:      (n_cam_samples, 32, 32, 3) float32 in [0, 1]
-    cams:        (n_cam_samples, 32, 32) float32 — per-image CAM heatmaps
+    activations:  layer_idx -> (n_samples, dim)
+    labels:       (n_samples,) int8 — class indices
+    images:       (n_cam_samples, H, W, 3) float32 in [0, 1]
+    cams:         (n_cam_samples, H, W) float32 — per-image CAM heatmaps
+    class_names:  optional list of string class names; if omitted, not stored
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -51,12 +53,17 @@ def save_vision_data(
         f.create_dataset("labels", data=labels.astype(np.int8))
         f.create_dataset("images", data=images.astype(np.float32))
         f.create_dataset("cams", data=cams.astype(np.float32))
+        if class_names is not None:
+            dt = h5py.string_dtype()
+            f.create_dataset(
+                "class_names", data=np.array(class_names, dtype=object), dtype=dt
+            )
 
 
 def load_vision_data(
     path: str | Path,
-) -> tuple[dict[int, np.ndarray], np.ndarray, np.ndarray, np.ndarray]:
-    """Returns activations, labels, images, cams."""
+) -> tuple[dict[int, np.ndarray], np.ndarray, np.ndarray, np.ndarray, list[str] | None]:
+    """Returns activations, labels, images, cams, class_names (or None if not stored)."""
     path = Path(path)
     activations: dict[int, np.ndarray] = {}
     with h5py.File(path, "r") as f:
@@ -66,4 +73,10 @@ def load_vision_data(
         labels = f["labels"][:]
         images = f["images"][:]
         cams = f["cams"][:]
-    return activations, labels, images, cams
+        if "class_names" in f:
+            class_names = [
+                n.decode() if isinstance(n, bytes) else n for n in f["class_names"][:]
+            ]
+        else:
+            class_names = None
+    return activations, labels, images, cams, class_names

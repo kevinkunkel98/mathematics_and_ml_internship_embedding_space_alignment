@@ -117,40 +117,43 @@
 
 // ── Slides ────────────────────────────────────────────────────────────────────
 
-// Custom title slide
+// Custom title slide — dark theme
+#let accent = rgb("#8ab4d4")
 #slide(
-  config: config-methods(header: _ => none, footer: _ => none),
+  config: config-methods(header: _ => none, footer: _ => none) + config-page(fill: navy),
   composer: (1fr, 1.1fr),
   align: horizon,
 )[
   #set align(left)
   #v(1fr)
-  #text(size: 22pt, weight: "bold", fill: navy)[Representational Geometry \ in Neural Networks]
-  #v(0.3em)
-  #text(size: 13pt, fill: luma(80))[From Vision Transformers to RLHF-Aligned Language Models]
+  #text(size: 28pt, weight: "bold", fill: white)[Representational Geometry \ in Neural Networks]
+  #v(0.35em)
+  #text(size: 13pt, fill: accent)[From Vision Transformers to RLHF-Aligned Language Models]
   #v(0.9em)
-  #line(length: 80%, stroke: 1pt + navy)
+  #line(length: 80%, stroke: 1pt + accent)
   #v(0.5em)
   #grid(
     columns: (1fr, 1fr),
     gutter: 0.25em,
-    text(size: 10.5pt)[Marla Huxhold], text(size: 10.5pt)[Sarah Pollinger],
-    text(size: 10.5pt)[Ellen Kunigk], text(size: 10.5pt)[Kevin Kunkel],
-    text(size: 10.5pt)[Abdellah Charki], [],
+    text(size: 10.5pt, fill: white)[Marla Huxhold], text(size: 10.5pt, fill: white)[Sarah Pollinger],
+    text(size: 10.5pt, fill: white)[Ellen Kunigk], text(size: 10.5pt, fill: white)[Kevin Kunkel],
+    text(size: 10.5pt, fill: white)[Abdellah Charki], [],
   )
   #v(0.35em)
-  #text(size: 10pt, fill: luma(100))[Summer Semester 2026]
+  #text(size: 10pt, fill: accent)[Summer Semester 2026]
   #v(0.15em)
-  #text(size: 10pt, fill: luma(100))[
+  #text(size: 10pt, fill: accent)[
     Universität Leipzig — Mathematics & Machine Learning Internship \
     Supervisor: Dr. Diaaeldin Taha
   ]
   #v(1fr)
 ][
   #align(center + horizon)[
-    #image("assets/slides/dashboard_vit_umap.png")
+    #block(stroke: 1pt + accent, radius: 4pt, clip: true)[
+      #image("assets/slides/dashboard_vit_umap.png")
+    ]
     #v(0.3em)
-    #text(size: 8pt, fill: luma(140))[ViT-B/16 · layer 12 · CIFAR-10 · real data]
+    #text(size: 8pt, fill: accent)[ViT-B/16 · layer 12 · CIFAR-10 · real data]
   ]
 ]
 
@@ -166,32 +169,41 @@
   inset: (x: 0.9em, y: 0.7em),
   radius: 3pt,
 )[
-  *Core question:* How does training geometrically reorganize the internal representation
-  space of a neural network — and can we make that transformation literally visible?
+  *Core question:* Does RLHF alignment change the geometry of language model representations —
+  and does it bring them closer to how vision models encode the visual world?
 ]
 
-#v(0.6em)
+#v(0.4em)
 #grid(
   columns: (1fr, 1fr),
-  gutter: 1.2em,
-  block(fill: sky, inset: 0.8em, radius: 3pt, stroke: (left: 3pt + blue))[
-    *Part 1 — Vision* \
-    #v(0.3em)
+  gutter: 1.0em,
+  block(fill: sky, inset: (x: 0.8em, y: 0.6em), radius: 3pt, stroke: (left: 3pt + blue))[
+    *Part 1 — Visual geometry* \
     ResNet-18 vs. ViT-B/16 on CIFAR-10 \
-    *How similar* are their internal layers? \
-    *Which regions* drive their predictions? \
-    #v(0.3em)
+    How do CNN and ViT representations differ across layers? \
+    #v(0.2em)
     #text(size: 0.85em, fill: luma(80))[CKA + Class Activation Maps]
   ],
-  block(fill: mint, inset: 0.8em, radius: 3pt, stroke: (left: 3pt + sage))[
-    *Part 2 — Language* \
-    #v(0.3em)
-    Llama-3-8B vs. Llama-3-8B-Instruct \
-    Does RLHF *linearly separate* preferred \ from rejected responses? \
-    #v(0.3em)
+  block(fill: mint, inset: (x: 0.8em, y: 0.6em), radius: 3pt, stroke: (left: 3pt + sage))[
+    *Part 2 — Language geometry* \
+    Llama-3-8B base vs. Llama-3-8B-Instruct \
+    How does RLHF reshape the embedding space? \
+    #v(0.2em)
     #text(size: 0.85em, fill: luma(80))[LinearSVC + UMAP · `Anthropic/hh-rlhf`]
   ],
 )
+
+#v(0.35em)
+#block(
+  fill: rgb("#fef9ec"),
+  stroke: (left: 3pt + rgb("#b7770d")),
+  inset: (x: 0.9em, y: 0.5em),
+  radius: 3pt,
+)[
+  #text(weight: "bold", fill: rgb("#b7770d"), size: 0.9em)[Bridge →]
+  Matched (image, caption) pairs from MS-COCO let us measure *cross-modal CKA*.
+  CLIP sets the ceiling (explicitly trained for this) — does RLHF move Llama toward it?
+]
 
 // --------------------------------------------------------------------------
 = Approach
@@ -221,6 +233,12 @@
   [Language],
   [Geometric effect of RLHF alignment across the full model],
   [*UMAP* scatter — base vs. instruct, layer slider],
+  [Cross-modal],
+  [Alignment between vision and language representations],
+  [*CKA* on matched MS-COCO (image, caption) pairs],
+  [Cross-modal],
+  [Does RLHF shift language geometry toward visual representations?],
+  [Llama-base vs. Instruct vs. *CLIP* (upper-bound baseline)],
   table.hline(stroke: 0.5pt + navy),
 )
 
@@ -246,15 +264,15 @@
   align: top,
   status-card([Done], sage, mint, sage)[
     - Dash app · CKA heatmap, CAM viewer & layer UMAP
-    - Real CIFAR-10 embeddings (ResNet-18 & ViT-B/16)
+    - Real CIFAR-10 embeddings · ResNet-18 ✓, ViT training
     - Real LLM embeddings (Llama-3-8B base + Instruct)
-    - CKA + saliency + UMAP pipeline · 24 tests
+    - CKA + LinearSVC + UMAP pipeline · 24 tests
   ],
   status-card([Up next], blue, sky, blue)[
-    - Fine-tune ResNet-18 on CIFAR-10
-    - Re-train ViT (*49.9%* → target ≥ 85%)
-    - Saliency maps & bias probe experiments
-    - Correlate CKA profile with UMAP layer separation
+    - ViT fine-tuning → ≥ 85% on CIFAR-10
+    - Cross-modal CKA: Llama-base / Instruct / *CLIP* × ViT
+    - Does RLHF move Llama toward CLIP-level alignment?
+    - Bias probe experiments (Part 2)
   ],
 )
 

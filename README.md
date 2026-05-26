@@ -28,6 +28,8 @@ Both parts are surfaced in a single **interactive Plotly Dash dashboard** with t
 | Vision | How similar are the internal representations of CNNs vs. ViTs, and which image regions drive cluster formation? | CKA + Class Activation Maps |
 | Language | Can a linear hyperplane separate preferred from rejected response vectors after RLHF, and how does this evolve across layers? | LinearSVC + Margin Analysis |
 | Language | Can political or cultural biases introduced by RLHF be identified as geometric structures in the embedding space? | Bias Probes + Cluster Analysis |
+| Cross-modal | Does RLHF bring language representations geometrically closer to how vision models encode the world? | Cross-modal CKA on MS-COCO (image, caption) pairs |
+| Cross-modal | How far are unaligned and RLHF-aligned LLMs from explicit cross-modal alignment? | CLIP (ViT-B/32) as upper-bound baseline |
 
 ---
 
@@ -60,6 +62,8 @@ The following datasets are fetched automatically by the extraction scripts via t
 |-------|------|
 | Vision Models | ResNet-18 + ViT-B/16 (torchvision pretrained, fine-tuned on CIFAR-10) |
 | Language Models | HuggingFace Transformers (Llama-3-8B, 4-bit quantized) |
+| Cross-modal Baseline | CLIP ViT-B/32 (OpenAI) — upper bound for cross-modal alignment |
+| Cross-modal Dataset | MS-COCO matched (image, caption) pairs |
 | Representational Similarity | Linear CKA, LinearSVC, TruncatedSVD |
 | Dimensionality Reduction | UMAP, t-SNE |
 | Visualization | Plotly Dash (unified two-tab dashboard) |
