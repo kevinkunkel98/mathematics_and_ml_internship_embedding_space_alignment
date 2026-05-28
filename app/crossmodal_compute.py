@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Cross-modal CKA between vision and language model layer activations.
 
 Computes pairwise CKA matrices for:

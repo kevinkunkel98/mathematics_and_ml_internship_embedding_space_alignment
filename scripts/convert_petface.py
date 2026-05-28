@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Convert Sarah & Marla's PetFace experiment outputs to dashboard-compatible HDF5.
 
 Expected experiment folder layout (as created by OutputManager + extract_and_save_activations):

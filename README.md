@@ -7,15 +7,15 @@
 
 ## Overview
 
-This project studies how training transforms the internal representation spaces of neural networks — across two complementary settings:
+This project investigates whether a **shared representational structure** emerges when vision and language models are trained on the same task — and how RLHF alignment geometrically transforms language model embedding spaces.
 
-**Part 1 — Vision Models:** We compare the representational geometry of CNNs and Vision Transformers on CIFAR-10, using Centered Kernel Alignment (CKA) to quantify how similarly the two architectures encode visual information, and Class Activation Maps to identify which image regions drive cluster formation.
+**Part 1 — Cross-modal alignment:** DINOv2 (vision) and Llama-3-8B (language) are both fine-tuned on a multi-class prediction task using matched (image, caption) pairs from MS-COCO. We measure representational alignment via Centered Kernel Alignment (CKA) before and after cross-modal fine-tuning — where each model is regularized toward the other's latent representation. The core question: do models inherently converge to a shared representation, or does cross-modal guidance provide genuinely new information?
 
-**Part 2 — Language Models:** We investigate how Reinforcement Learning from Human Feedback (RLHF) geometrically transforms the embedding space of large language models, comparing Llama-3-8B (base) with Llama-3-8B-Instruct (RLHF-aligned) to make the alignment transformation literally visible and explorable.
+**Part 2 — RLHF geometry:** We compare Llama-3-8B (base) with Llama-3-8B-Instruct (RLHF-aligned) layer by layer, using UMAP and LinearSVC to make the geometric effect of alignment literally visible. Future work extends this to RLHF training snapshots — tracking how cross-modal alignment evolves *during* RLHF fine-tuning.
 
-Both parts are surfaced in a single **interactive Plotly Dash dashboard** with two tabs.
+Both parts are surfaced in a single **interactive Plotly Dash dashboard**.
 
-| Part 1 — CKA: ResNet-18 vs ViT-B/16 | Part 2 — UMAP: RLHF Embedding Space |
+| Part 1 — CKA: Vision vs. Language | Part 2 — UMAP: RLHF Embedding Space |
 |:---:|:---:|
 | ![CKA Heatmap](assets/slides/cka_heatmap.png) | ![UMAP Scatter](assets/slides/umap_scatter.png) |
 
@@ -25,11 +25,12 @@ Both parts are surfaced in a single **interactive Plotly Dash dashboard** with t
 
 | Part | Question | Method |
 |------|----------|--------|
-| Vision | How similar are the internal representations of CNNs vs. ViTs, and which image regions drive cluster formation? | CKA + Class Activation Maps |
-| Language | Can a linear hyperplane separate preferred from rejected response vectors after RLHF, and how does this evolve across layers? | LinearSVC + Margin Analysis |
-| Language | Can political or cultural biases introduced by RLHF be identified as geometric structures in the embedding space? | Bias Probes + Cluster Analysis |
-| Cross-modal | Does RLHF bring language representations geometrically closer to how vision models encode the world? | Cross-modal CKA on MS-COCO (image, caption) pairs |
-| Cross-modal | How far are unaligned and RLHF-aligned LLMs from explicit cross-modal alignment? | CLIP (ViT-B/32) as upper-bound baseline |
+| Cross-modal | Does a shared representation emerge when vision and language models train on the same task? | CKA before/after cross-modal fine-tuning |
+| Cross-modal | Does fine-tuning with the other model's latent representation as a loss term improve performance? | CKA + task accuracy comparison |
+| Cross-modal | How far are our models from explicit cross-modal alignment? | CLIP (ViT-B/32) as upper-bound baseline |
+| Language | Does RLHF geometrically separate preferred from rejected responses? | LinearSVC per layer across 32 layers |
+| Language | How does this geometric separation evolve layer by layer? | UMAP scatter · layer slider |
+| Language | Does RLHF alignment shift language representations toward visual geometry? | Cross-modal CKA: base vs. Instruct vs. CLIP |
 
 ---
 
@@ -37,19 +38,11 @@ Both parts are surfaced in a single **interactive Plotly Dash dashboard** with t
 
 Datasets are **not included in this repository** and must be downloaded manually before running the extraction scripts.
 
-### CIFAR-10
+### MS-COCO (cross-modal, Part 1)
 
-Download and extract into `data/cifar10/`:
-
-```bash
-mkdir -p data/cifar10
-curl -o data/cifar10/cifar-10-python.tar.gz https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz
-tar -xzf data/cifar10/cifar-10-python.tar.gz -C data/cifar10/
-```
+Matched (image, caption) pairs — fetched automatically via the `datasets` library.
 
 ### HuggingFace Datasets (auto-downloaded)
-
-The following datasets are fetched automatically by the extraction scripts via the `datasets` library — no manual step required:
 
 - [`Anthropic/hh-rlhf`](https://huggingface.co/datasets/Anthropic/hh-rlhf) — Human preference pairs (chosen vs. rejected responses)
 - [`OpenAssistant/oasst1`](https://huggingface.co/datasets/OpenAssistant/oasst1) — Open-source preference dataset
@@ -60,8 +53,8 @@ The following datasets are fetched automatically by the extraction scripts via t
 
 | Layer | Tool |
 |-------|------|
-| Vision Models | ResNet-18 + ViT-B/16 (torchvision pretrained, fine-tuned on CIFAR-10) |
-| Language Models | HuggingFace Transformers (Llama-3-8B, 4-bit quantized) |
+| Vision Model | DINOv2 (ViT-based, self-supervised — Meta AI) |
+| Language Model | Llama-3-8B base + Instruct (HuggingFace, 4-bit quantized) |
 | Cross-modal Baseline | CLIP ViT-B/32 (OpenAI) — upper bound for cross-modal alignment |
 | Cross-modal Dataset | MS-COCO matched (image, caption) pairs |
 | Representational Similarity | Linear CKA, LinearSVC, TruncatedSVD |
@@ -74,9 +67,9 @@ The following datasets are fetched automatically by the extraction scripts via t
 
 A single Dash app (`app/app.py`) with two tabs, running on `http://127.0.0.1:8050`.
 
-**Tab 1 — CNN vs ViT (CIFAR-10)**
-- CKA heatmap: pairwise layer similarity between ResNet-18 and ViT-B/16
-- CAM comparison: side-by-side Class Activation Maps with class filter dropdown
+**Tab 1 — Vision: CKA & Activations**
+- CKA heatmap: pairwise layer similarity between vision and language representations
+- CAM comparison: Class Activation Maps with class filter dropdown
 
 **Tab 2 — RLHF Embedding Space**
 - UMAP / t-SNE scatter of chosen vs. rejected embeddings per layer
@@ -92,13 +85,15 @@ app/
   vision_callbacks.py     # Part 1 callback logic
   compute.py              # UMAP, t-SNE, LinearSVC fitting + pickle cache
   vision_compute.py       # Linear CKA computation + pickle cache
+  crossmodal_compute.py   # Cross-modal CKA (vision vs. language)
   figures.py              # Part 2 Plotly figure builders
   vision_figures.py       # Part 1 Plotly figure builders (CKA heatmap, CAM)
 scripts/
   extract_embeddings.py        # Offline: embed hh-rlhf with Llama-3-8B, save HDF5
-  extract_vision_embeddings.py # Offline: fine-tune ResNet-18 + ViT-B/16, extract activations
+  extract_vision_embeddings.py # Offline: fine-tune vision model, extract activations
   generate_mock_data.py        # Synthetic LLM embeddings for UI testing
   generate_mock_vision.py      # Synthetic vision activations + CAMs for UI testing
+  generate_mock_crossmodal.py  # Synthetic cross-modal embeddings for UI testing
   export_slide_figures.py      # Export static PNGs from mock data for slides
   data.py                      # hh-rlhf sampling
   io.py                        # HDF5 read/write (LLM + vision)
@@ -119,9 +114,14 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+> **Note (macOS):** `bitsandbytes` is Linux/GPU only and not required for the dashboard or mock data. Install without it:
+> ```bash
+> grep -v bitsandbytes requirements.txt | pip install -r /dev/stdin
+> ```
+
 ### Option A — Test with mock data (no GPU required)
 
-Generates synthetic data for both parts shaped identically to real model output:
+Generates synthetic data shaped identically to real model output:
 
 ```bash
 python scripts/generate_mock_data.py
@@ -140,8 +140,6 @@ First launch fits UMAP, t-SNE, LinearSVC, and CKA for all layer combinations (~5
 ```bash
 python scripts/extract_vision_embeddings.py --epochs 10 --n-train 10000
 ```
-
-Trains ResNet-18 and ViT-B/16 on CIFAR-10 and extracts layer activations + GradCAM. Expects a CUDA-capable GPU. Takes ~30–60 min depending on hardware.
 
 **Part 2 — Language:**
 
@@ -168,8 +166,8 @@ pytest tests/ -v   # 24 tests
 
 | Name | Program |
 |------|------|
-| Marla Huxhold | M.Sc. Data Science |
-| Sarah Pollinger | M.Sc. Data Science |
+| Marla Huxhold | M.Sc. Computer Science |
+| Sarah Pollinger | M.Sc. Computer Science |
 | Ellen Kunigk | M.Sc. Computer Science |
 | Kevin Kunkel | M.Sc. Computer Science |
 | Abdellah Charki | M.Sc. Data Science |
@@ -178,14 +176,15 @@ pytest tests/ -v   # 24 tests
 
 ## References
 
-- Kucukahmetler et al. (2026). *Relative Geometry of Neural Forecasters: Linking Accuracy and Alignment in Learned Latent Geometry.* [arXiv:2602.15676](https://arxiv.org/abs/2602.15676)
+- He, Trott, Khosla (2025). *Shared Latent Representations across Vision and Language.* EMNLP. [arXiv:2509.20751](https://arxiv.org/abs/2509.20751) — **anchor paper**
+- Kucukahmetler et al. (2026). *Relative Geometry of Neural Forecasters: Linking Accuracy and Alignment in Learned Latent Geometry.* TMLR. [arXiv:2602.15676](https://arxiv.org/abs/2602.15676)
 - Kornblith et al. (2019). *Similarity of Neural Network Representations Revisited.* ICML. [arXiv:1905.00414](https://arxiv.org/abs/1905.00414)
 - Ouyang et al. (2022). *Training language models to follow instructions with human feedback.* NeurIPS. [arXiv:2203.02155](https://arxiv.org/abs/2203.02155)
 - Christiano et al. (2017). *Deep Reinforcement Learning from Human Preferences.* NeurIPS. [arXiv:1706.03741](https://arxiv.org/abs/1706.03741)
 - McInnes et al. (2018). *UMAP: Uniform Manifold Approximation and Projection.* [arXiv:1802.03426](https://arxiv.org/abs/1802.03426)
 - Dosovitskiy et al. (2020). *An Image is Worth 16×16 Words: Transformers for Image Recognition at Scale.* [arXiv:2010.11929](https://arxiv.org/abs/2010.11929)
-- [Anthropic HH-RLHF Dataset](https://huggingface.co/datasets/Anthropic/hh-rlhf)
 
 ---
 
 *Mathematics & Machine Learning Internship — University of Leipzig, SoSe 2026*
+*Supervisor: Dr. Diaaeldin Taha*

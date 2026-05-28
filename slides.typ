@@ -38,6 +38,7 @@
     neutral-light: rgb("#edf2f8"),
   ),
   config-page(margin: (x: 2.8em, y: 2.2em)),
+  config-methods(new-section-slide-fn: none, title-slide-fn: none),
   config-info(
     title: [Representational Geometry in Neural Networks],
     subtitle: [From Vision Transformers to RLHF-Aligned Language Models],
@@ -47,7 +48,7 @@
   ),
 )
 
-#set text(size: 19pt)
+#set text(size: 17pt)
 
 // ── Embedding space diagram for title slide ───────────────────────────────────
 #let embedding-diagram = canvas(length: 1cm, {
@@ -158,173 +159,159 @@
 ]
 
 // --------------------------------------------------------------------------
-= Goal & Structure
-
-== What We Are Studying
+== Core Questions
 
 #v(0.3em)
-#block(
-  fill: sand,
-  stroke: (left: 3pt + navy),
-  inset: (x: 0.9em, y: 0.7em),
-  radius: 3pt,
-)[
-  *Core question:* Does RLHF alignment change the geometry of language model representations —
-  and does it bring them closer to how vision models encode the visual world?
-]
-
-#v(0.4em)
 #grid(
   columns: (1fr, 1fr),
   gutter: 1.0em,
-  block(fill: sky, inset: (x: 0.8em, y: 0.6em), radius: 3pt, stroke: (left: 3pt + blue))[
-    *Part 1 — Visual geometry* \
-    ResNet-18 vs. ViT-B/16 on CIFAR-10 \
-    How do CNN and ViT representations differ across layers? \
-    #v(0.2em)
-    #text(size: 0.85em, fill: luma(80))[CKA + Class Activation Maps]
-  ],
-  block(fill: mint, inset: (x: 0.8em, y: 0.6em), radius: 3pt, stroke: (left: 3pt + sage))[
-    *Part 2 — Language geometry* \
-    Llama-3-8B base vs. Llama-3-8B-Instruct \
-    How does RLHF reshape the embedding space? \
-    #v(0.2em)
-    #text(size: 0.85em, fill: luma(80))[LinearSVC + UMAP · `Anthropic/hh-rlhf`]
-  ],
-)
-
-#v(0.35em)
-#block(
-  fill: rgb("#fef9ec"),
-  stroke: (left: 3pt + rgb("#b7770d")),
-  inset: (x: 0.9em, y: 0.5em),
-  radius: 3pt,
-)[
-  #text(weight: "bold", fill: rgb("#b7770d"), size: 0.9em)[Bridge →]
-  Matched (image, caption) pairs from MS-COCO let us measure *cross-modal CKA*.
-  CLIP sets the ceiling (explicitly trained for this) — does RLHF move Llama toward it?
-]
-
-// --------------------------------------------------------------------------
-= Approach
-
-== Methods at a Glance
-
-#v(0.3em)
-#table(
-  columns: (auto, 1fr, 1fr),
-  align: (left, left, left),
-  stroke: none,
-  fill: (_, row) => if row == 0 { navy } else if calc.odd(row) { rgb("#f0f4f9") } else { white },
-  table.hline(stroke: 0.5pt + navy),
-  [#text(fill: white, weight: "bold")[Part]],
-  [#text(fill: white, weight: "bold")[What we measure]],
-  [#text(fill: white, weight: "bold")[How]],
-  table.hline(stroke: 0.3pt + luma(200)),
-  [Vision],
-  [Layer-wise representational similarity between CNN and ViT],
-  [*CKA* — score in $[0,1]$, invariant to rotation & scaling],
-  [Vision],
-  [Which image regions activate each architecture's layers],
-  [*GradCAM* — gradient-weighted spatial attention maps],
-  [Language],
-  [Linear separability of chosen vs. rejected response embeddings],
-  [*LinearSVC* per layer — accuracy & margin across 32 layers],
-  [Language],
-  [Geometric effect of RLHF alignment across the full model],
-  [*UMAP* scatter — base vs. instruct, layer slider],
-  [Cross-modal],
-  [Alignment between vision and language representations],
-  [*CKA* on matched MS-COCO (image, caption) pairs],
-  [Cross-modal],
-  [Does RLHF shift language geometry toward visual representations?],
-  [Llama-base vs. Instruct vs. *CLIP* (upper-bound baseline)],
-  table.hline(stroke: 0.5pt + navy),
-)
-
-// --------------------------------------------------------------------------
-= Current State
-
-== What We Have Built
-
-#let status-card(title, header-fill, body-fill, stroke-clr, body) = block(
-  width: 100%, radius: 5pt, stroke: 1pt + stroke-clr, clip: true, inset: 0pt,
-)[
-  #set block(spacing: 0em)
-  #block(width: 100%, fill: header-fill, inset: (x: 0.9em, y: 0.55em))[
-    #text(fill: white, weight: "bold", size: 0.95em)[#title]
-  ]
-  #block(width: 100%, fill: body-fill, inset: (x: 0.9em, y: 0.7em))[#body]
-]
-
-#v(0.15em)
-#grid(
-  columns: (1fr, 1fr),
-  gutter: 1.2em,
   align: top,
-  status-card([Done], sage, mint, sage)[
-    - Dash app · CKA heatmap, CAM viewer & layer UMAP
-    - Real CIFAR-10 embeddings · ResNet-18 ✓, ViT training
-    - Real LLM embeddings (Llama-3-8B base + Instruct)
-    - CKA + LinearSVC + UMAP pipeline · 24 tests
+  [
+    #block(fill: navy, inset: (x: 0.8em, y: 0.55em), radius: (top: 3pt))[
+      #text(fill: white, weight: "bold", size: 0.9em)[Part 1 — Cross-modal alignment]
+    ]
+    #block(fill: sky, inset: (x: 0.8em, y: 0.55em), radius: (bottom: 3pt), stroke: (left: 3pt + blue), width: 100%)[
+      When a vision model and a language model train on the *same task*, does a shared representational structure emerge across modalities?
+
+      #v(0.3em)
+      - *Hypothesis A:* cross-modal signal is new information → improves model
+      - *Hypothesis B:* models converge regardless — extra signal adds little
+
+      #v(0.3em)
+      #text(size: 0.8em, fill: luma(80))[CKA before/after cross-modal fine-tuning · DINOv2 + Llama · MS-COCO]
+    ]
   ],
-  status-card([Up next], blue, sky, blue)[
-    - ViT fine-tuning → ≥ 85% on CIFAR-10
-    - Cross-modal CKA: Llama-base / Instruct / *CLIP* × ViT
-    - Does RLHF move Llama toward CLIP-level alignment?
-    - Bias probe experiments (Part 2)
+  [
+    #block(fill: navy, inset: (x: 0.8em, y: 0.45em), radius: (top: 3pt))[
+      #text(fill: white, weight: "bold", size: 0.85em)[Part 2 — RLHF geometry]
+    ]
+    #block(fill: mint, inset: (x: 0.8em, y: 0.55em), radius: (bottom: 3pt), stroke: (left: 3pt + sage), width: 100%)[
+      Does RLHF geometrically transform a language model's embedding space — encoding human preference as a *linearly separable structure*?
+
+      #v(0.3em)
+      - Does Instruct separate chosen/rejected responses that base cannot?
+      - How does separation evolve *layer by layer*?
+
+      #v(0.3em)
+      #text(size: 0.8em, fill: luma(80))[UMAP + LinearSVC per layer · Llama-3-8B base vs. Instruct · `Anthropic/hh-rlhf`]
+    ]
   ],
 )
 
-#v(0.3em)
-#block(
-  fill: sky,
-  stroke: (left: 3pt + blue),
-  inset: (x: 0.9em, y: 0.55em),
-  radius: 3pt,
-)[
-  #text(weight: "bold", fill: blue, size: 0.9em)[Early finding] —
-  ViT-B/16 builds class-discriminative structure monotonically across layers (UMAP ratio 0.44 → 3.79).
-  ResNet without fine-tuning shows no class clustering — motivates proper training.
-]
-
 // --------------------------------------------------------------------------
-= Dashboard
-
-== Part 1 — CKA Heatmap & Layer Activation UMAP
+== Setup & Expected Findings
 
 #v(0.2em)
 #grid(
   columns: (1fr, 1fr),
-  gutter: 0.8em,
-  image("assets/slides/dashboard_cka.png"),
+  gutter: 0.9em,
+  align: top,
   [
-    #image("assets/slides/dashboard_vit_umap.png")
-    #v(0.15em)
-    #text(size: 8.5pt, fill: luma(120))[ViT-B/16 · layer 12 · CIFAR-10 test set (real data)]
+    #block(fill: navy, inset: (x: 0.7em, y: 0.4em), radius: (top: 3pt), width: 100%)[
+      #text(fill: white, weight: "bold", size: 0.82em)[Part 1 — Cross-modal · DINOv2 + Llama · MS-COCO · multi-class prediction]
+    ]
+    #block(fill: sky, inset: (x: 0.8em, y: 0.5em), radius: (bottom: 3pt), stroke: (left: 3pt + blue), width: 100%)[
+      Both models trained on *same task* (object category prediction) · measure CKA · fine-tune with loss term encouraging similarity to the other model's representation · compare
+
+      #v(0.25em)
+      *CKA high before fine-tuning:* models converge inherently *(Platonic Representation Hypothesis)*
+
+      *CKA rises after fine-tuning:* cross-modal signal is genuinely new information
+
+      #v(0.2em)
+      #text(size: 0.78em, fill: luma(60))[Layer-wise CKA map shows *where* shared meaning lives · UMAP + dashboard to visualize]
+    ]
+  ],
+  [
+    #block(fill: navy, inset: (x: 0.7em, y: 0.4em), radius: (top: 3pt), width: 100%)[
+      #text(fill: white, weight: "bold", size: 0.82em)[Part 2 — RLHF geometry · Llama-3-8B base vs. Instruct]
+    ]
+    #block(fill: mint, inset: (x: 0.8em, y: 0.5em), radius: (bottom: 3pt), stroke: (left: 3pt + sage), width: 100%)[
+      UMAP + LinearSVC per layer · `Anthropic/hh-rlhf`
+
+      #v(0.2em)
+      *Phase transition:* base near-chance SVC — Instruct shows sharp jump, pinpointing *where* alignment lives
+
+      *UMAP split:* chosen/rejected mixed in base, cleanly separated in Instruct
+
+      #v(0.2em)
+      *Perspective:* extend to RLHF training *snapshots* — plot cross-modal CKA vs. training step to see if alignment shifts *during* RLHF
+
+      #v(0.15em)
+      #text(size: 0.78em, fill: luma(60))[He-Trott-Khosla 2025 · pile of LMs + vision models]
+    ]
   ],
 )
 
 // --------------------------------------------------------------------------
-== Part 2 — RLHF Embedding Space & Separation Score
+== Outlook & Deliverable
 
-#v(0.15em)
+#v(0.2em)
+#grid(
+  columns: (1.1fr, 0.9fr),
+  gutter: 0.9em,
+  align: top,
+  [
+    #image("assets/slides/dashboard_cka.png")
+    #v(0.1em)
+    #text(size: 8.5pt, fill: luma(120))[Interactive Plotly Dash · CKA heatmap · UMAP layer slider · LinearSVC score]
+  ],
+  [
+    #block(fill: navy, inset: (x: 0.7em, y: 0.4em), radius: (top: 3pt), width: 100%)[
+      #text(fill: white, weight: "bold", size: 0.8em)[Next steps — toward July]
+    ]
+    #block(fill: sky, inset: (x: 0.7em, y: 0.45em), radius: (bottom: 3pt), stroke: (left: 3pt + blue), width: 100%)[
+      - Cross-modal CKA: DINOv2 vs. Llama on MS-COCO pairs
+      - *CLIP (ViT-B/32)* as upper bound — explicitly trained cross-modal alignment
+      - Compare base vs. Instruct CKA scores
+    ]
+    #v(0.3em)
+    #block(fill: navy, inset: (x: 0.7em, y: 0.4em), radius: (top: 3pt), width: 100%)[
+      #text(fill: white, weight: "bold", size: 0.8em)[Project deliverable]
+    ]
+    #block(fill: mint, inset: (x: 0.7em, y: 0.45em), radius: (bottom: 3pt), stroke: (left: 3pt + sage), width: 100%)[
+      The dashboard *is* the deliverable — interactive visualization of all findings: layer slider, CKA heatmaps, UMAP scatter, SVC score
+    ]
+  ],
+)
+
+// --------------------------------------------------------------------------
+== References
+
+#set text(size: 12pt)
+#v(0.3em)
 #grid(
   columns: (1fr, 1fr),
-  gutter: 0.8em,
-  image("assets/slides/umap_scatter.png"),
+  gutter: (0.6em, 0.4em),
+  align: top,
   [
-    #image("assets/slides/svc_line.png")
-    #v(0.3em)
-    #block(
-      fill: sky,
-      stroke: (left: 3pt + blue),
-      inset: (x: 0.8em, y: 0.6em),
-      radius: 3pt,
-    )[
-      #text(weight: "bold", fill: blue, size: 0.85em)[Key finding so far] \
-      The aligned model shows markedly higher SVC accuracy in deeper layers —
-      RLHF *geometrically* encodes human preference as a linear structure.
-    ]
+    #text(weight: "bold", fill: navy)[He, Trott, Khosla (2025)] \
+    _Shared Latent Representations across Vision and Language_ \
+    #text(fill: luma(100))[arXiv:2509.20751 · *Anchor paper*]
+  ],
+  [
+    #text(weight: "bold", fill: navy)[Kucukahmetler et al. (2026)] \
+    _Relative Geometry of Neural Forecasters_ \
+    #text(fill: luma(100))[TMLR · arXiv:2602.15676]
+  ],
+  [
+    #text(weight: "bold", fill: navy)[Kornblith et al. (2019)] \
+    _Similarity of Neural Network Representations Revisited_ \
+    #text(fill: luma(100))[ICML · arXiv:1905.00414 · *CKA method*]
+  ],
+  [
+    #text(weight: "bold", fill: navy)[Ouyang et al. (2022)] \
+    _Training LMs to Follow Instructions with Human Feedback_ \
+    #text(fill: luma(100))[NeurIPS · arXiv:2203.02155 · *InstructGPT / RLHF*]
+  ],
+  [
+    #text(weight: "bold", fill: navy)[Christiano et al. (2017)] \
+    _Deep RL from Human Preferences_ \
+    #text(fill: luma(100))[NeurIPS · arXiv:1706.03741 · *RLHF foundations*]
+  ],
+  [
+    #text(weight: "bold", fill: navy)[McInnes et al. (2018)] \
+    _UMAP: Uniform Manifold Approximation and Projection_ \
+    #text(fill: luma(100))[arXiv:1802.03426 · *Dim. reduction method*]
   ],
 )

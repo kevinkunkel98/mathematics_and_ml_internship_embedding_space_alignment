@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sys
 from pathlib import Path
 
@@ -121,7 +122,7 @@ CROSSMODAL_DATA = _load_crossmodal_data()
 
 N_LAYERS = max(next(iter(APP_DATA.values()))["cache"]["umap"].keys())
 
-app = Dash(__name__, title="Representational Geometry")
+app = Dash(__name__, title="Representational Geometry in Neural Networks")
 
 _tab_style = {"padding": "6px 16px"}
 _selected_tab_style = {
@@ -134,6 +135,11 @@ _selected_tab_style = {
 
 _part2_layout = html.Div(
     [
+        html.P(
+            "Layer-wise UMAP and LinearSVC separation of chosen vs. rejected responses. "
+            "Does RLHF encode human preference as linearly separable geometry — and where in the network?",
+            style={"color": "#6b7280", "fontSize": "13px", "marginBottom": "12px"},
+        ),
         html.Div(
             [
                 html.Div(
@@ -216,7 +222,7 @@ if VISION_DATA is not None:
             # ── Vision UMAP ───────────────────────────────────────────────────
             html.Hr(style={"margin": "24px 0", "borderColor": "#333"}),
             html.H4(
-                "Layer Activation Space (UMAP)",
+                "Layer Activation Space — UMAP",
                 style={"marginBottom": "12px"},
             ),
             html.Div(
@@ -299,12 +305,17 @@ else:
 if CROSSMODAL_DATA is not None:
     _part3_layout = html.Div(
         [
+            html.P(
+                "CKA between DINOv2 (vision) and Llama-3-8B (language) on matched MS-COCO (image, caption) pairs. "
+                "Does a shared representational structure emerge? CLIP sets the upper bound.",
+                style={"color": "#6b7280", "fontSize": "13px", "marginBottom": "12px"},
+            ),
             html.Div(
                 [
                     html.Label("Show CLIP upper bound", style={"fontWeight": "bold"}),
                     dcc.Checklist(
                         id="crossmodal-clip-toggle",
-                        options=[{"label": " CLIP text encoder", "value": "clip"}],
+                        options=[{"label": " CLIP ViT-B/32 (explicitly trained for cross-modal alignment)", "value": "clip"}],
                         value=["clip"] if CROSSMODAL_DATA["clip"] is not None else [],
                         inputStyle={"marginRight": "6px"},
                     ),
@@ -329,31 +340,38 @@ else:
 
 app.layout = html.Div(
     [
-        html.H2("Representational Geometry in Neural Networks"),
+        html.H2(
+            "Representational Geometry in Neural Networks",
+            style={"marginBottom": "4px"},
+        ),
+        html.P(
+            "Does a shared representation emerge when vision and language models train on the same task?",
+            style={"color": "#6b7280", "marginTop": "0", "marginBottom": "20px", "fontSize": "14px"},
+        ),
         dcc.Tabs(
             id="main-tabs",
-            value="tab-llm",
+            value="tab-crossmodal",
             children=[
                 dcc.Tab(
-                    label="Part 1 — CNN vs ViT (CIFAR-10)",
-                    value="tab-vision",
+                    label="Part 1 — Cross-modal Alignment · DINOv2 × Llama · MS-COCO",
+                    value="tab-crossmodal",
                     style=_tab_style,
                     selected_style=_selected_tab_style,
-                    children=_part1_layout,
+                    children=_part3_layout,
                 ),
                 dcc.Tab(
-                    label="Part 2 — RLHF Embedding Space",
+                    label="Part 2 — RLHF Geometry · Llama-3-8B Base vs. Instruct",
                     value="tab-llm",
                     style=_tab_style,
                     selected_style=_selected_tab_style,
                     children=_part2_layout,
                 ),
                 dcc.Tab(
-                    label="Part 3 — Cross-modal Alignment",
-                    value="tab-crossmodal",
+                    label="Vision Layer Explorer · ResNet-18 vs ViT-B/16",
+                    value="tab-vision",
                     style=_tab_style,
                     selected_style=_selected_tab_style,
-                    children=_part3_layout,
+                    children=_part1_layout,
                 ),
             ],
             style={"marginBottom": "24px"},
