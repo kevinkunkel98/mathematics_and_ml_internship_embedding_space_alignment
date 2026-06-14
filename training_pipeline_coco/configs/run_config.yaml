@@ -1,0 +1,21 @@
+model: 
+    m_type : "vision"
+    checkpoint_path : "./models/language"
+
+running_params: 
+    batch_size : 16 
+    shuffle : true
+    n_workers : 4 
+    lr : 0.1
+    n_epochs : 20 
+    patience : 3 
+    device: "cuda:0"
+
+log_params: 
+    hug_password : "Zt()567kjhgLT76vfhle&%"
+    HUGGING_FACE_HUB_TOKEN : "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"
+
+data: 
+    path : './coco_data'
+    n_classes : 80
+    experiment_name : "dinov2_coco_multilabel"
