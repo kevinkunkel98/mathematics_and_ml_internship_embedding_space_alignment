@@ -44,16 +44,16 @@ class COCODs(Dataset):
         label_vector = self._get_label_vector(img_id)  # same for both model types
 
         if self.model_type == "vision":
-            """loads images as inputs and label vectors as output for model"""
             img_info = self.coco_inst.loadImgs(img_id)[0]
             image    = Image.open(os.path.join(self.image_dir, img_info['file_name'])).convert("RGB")
             inputs   = self.processor(images=image, return_tensors="pt")
-            ### adds a batch dimension 
-            inputs   = {k: v.squeeze(0) for k, v in inputs.items()}
-            inputs['labels'] = label_vector
+            # processor returns [1, 3, H, W]; drop that dim so the DataLoader
+            # collates a clean [B, 3, H, W]
+            inputs = {"pixel_values": inputs["pixel_values"].squeeze(0)}
+            inputs["labels"] = label_vector          # [num_classes]
             return inputs
 
-        elif self.model_type == "causal_lm":
+        elif self.model_type == "language":
             """loads captions as inputs and label vectors as output for model"""
             cap_ann_ids = self.coco_caps.getAnnIds(imgIds=img_id)
             ann     = self.coco_caps.loadAnns(cap_ann_ids)[0]
@@ -62,6 +62,17 @@ class COCODs(Dataset):
             inputs      = {k: v.squeeze(0) for k, v in inputs.items()}
             inputs['labels'] = label_vector
             return inputs
+  
+### need to add padding to the caption for the language model as they are of different length 
+# and otherwise can not be stacked 
+
+def make_collate_fn(tokenizer):
+    def collate(batch):
+        labels = torch.stack([b.pop("labels") for b in batch])      # [B, 80]
+        padded = tokenizer.pad(batch, return_tensors="pt")          # pads input_ids + attention_mask
+        padded["labels"] = labels
+        return padded
+    return collate
 
 
 def load_data(run_cfg, processor):
@@ -75,17 +86,24 @@ def load_data(run_cfg, processor):
                         DATA_TYPE='val2017', 
                         processor=processor)
     
+    ### if model is language need to add padding to the caption in order to batch 
+    collate_fn = None
+    if run_cfg['model']['m_type'] == "language":
+        collate_fn = make_collate_fn(processor)
+    
     # 2. Create train and test dataloader 
     
     train_loader = DataLoader(train_ds, 
                               batch_size=run_cfg['running_params']['batch_size'], 
                                 shuffle=run_cfg['running_params']['shuffle'],
-                                num_workers=run_cfg['running_params']['n_workers'])
+                                num_workers=run_cfg['running_params']['n_workers'],
+                                collate_fn=collate_fn)
 
     test_loader = DataLoader(test_ds, 
                               batch_size=run_cfg['running_params']['batch_size'], 
                                 shuffle=False,
-                                num_workers=run_cfg['running_params']['n_workers'])
+                                num_workers=run_cfg['running_params']['n_workers'],
+                                collate_fn=collate_fn)
     
     return train_loader, test_loader
     

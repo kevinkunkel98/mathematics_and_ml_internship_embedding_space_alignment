@@ -1,0 +1,15 @@
+# Data — too large for git
+data/data_coco
+
+
+# Logs and outputs
+out/
+error/
+
+# Python
+__pycache__/
+*.pyc
+*.pth
+*.pt
+# Experiments
+experiments/

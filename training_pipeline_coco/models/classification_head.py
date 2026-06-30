@@ -1,4 +1,5 @@
 import torch.nn as nn 
+import torch 
 
 class MultiLabelModel(nn.Module): 
     def __init__(self, backbone_model, model_cfg, n_classes):
@@ -16,6 +17,7 @@ class MultiLabelModel(nn.Module):
     def forward(self, inputs, labels=None):
         # Extract everything except labels before passing to backbone
         backbone_inputs = {k: v for k, v in inputs.items() if k != 'labels'}
+                
         outputs = self.backbone(**backbone_inputs)
 
         if self.m_type == "vision":
@@ -24,10 +26,18 @@ class MultiLabelModel(nn.Module):
 
         elif self.m_type == "language":
             # Last token summarizes the sequence for causal LMs
-            hidden = outputs.last_hidden_state[:, -1, :]  # [batch, hidden_dim]
+            outputs = self.backbone(**backbone_inputs, output_hidden_states=True)
+            last_layer = outputs.hidden_states[-1]               # [B, seq, hidden]
+
+            # last *non-pad* token (right padding -> can't just use [:, -1, :])
+            attn = backbone_inputs["attention_mask"]             # [B, seq]
+            last_idx = attn.sum(dim=1) - 1                       # [B]
+            hidden = last_layer[torch.arange(last_layer.size(0)), last_idx]  # [B, hidden]
         else: 
             raise ValueError("Selected model type is not known. Change in run_config.yaml")
-
+        
+        ### because the ouput of the language model can have dtype BFloat16
+        hidden = hidden.to(self.classifier.weight.dtype) 
         logits = self.classifier(hidden)  # [batch, 80]
 
         if labels is not None:

@@ -1,0 +1,6 @@
+Vision: 
+	First try: training_22306316.log
+	Second with batch 32: 22331204
+
+Language
+	First try: 22333103 (32 batch, 5 patience)

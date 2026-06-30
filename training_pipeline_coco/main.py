@@ -32,6 +32,10 @@ def main():
     ### load model 
     model, processor = load_model(run_cfg=run_cfg,model_cfg=model_cfg,n_classes=run_cfg['data']['n_classes'])
     
+    if run_cfg['model']['m_type'] == "vision":
+        model = model.to(device)
+    elif run_cfg['model']['m_type'] == "language":
+        model.classifier.to(device)
     ### load dataset 
     train_ldr, test_ldr = load_data(run_cfg=run_cfg, processor=processor)
     

@@ -1,6 +1,6 @@
 import torch 
 from torch.utils.data import Dataset, DataLoader
-from early_stopping import EarlyStopping
+from training.early_stopping import EarlyStopping
 #from checkpoints import CheckpointManager 
 from torch.optim import AdamW
 import pandas as pd 
