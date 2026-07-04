@@ -2,11 +2,12 @@
 Generate synthetic embeddings for dashboard testing without a GPU or HF token.
 
 Produces HDF5 files in the same format as extract_embeddings.py:
-  data/embeddings/meta-llama--Meta-Llama-3-8B/layers.h5
-  data/embeddings/meta-llama--Meta-Llama-3-8B-Instruct/layers.h5
+  data/embeddings/allenai--Llama-3.1-Tulu-3-8B-SFT/layers.h5
+  data/embeddings/allenai--Llama-3.1-Tulu-3-8B-DPO/layers.h5
+  data/embeddings/allenai--Llama-3.1-Tulu-3-8B/layers.h5
 
-The instruct model embeddings are nudged so that chosen/rejected separation
-visibly increases in later layers, mimicking the real RLHF geometry shift.
+Each checkpoint shows progressively stronger chosen/rejected separation,
+mimicking the geometric effect of the SFT → DPO → RLHF alignment pipeline.
 """
 
 import sys
@@ -29,26 +30,18 @@ def _make_labels() -> np.ndarray:
     return labels
 
 
-def _make_base_layers(rng: np.random.Generator) -> dict[int, np.ndarray]:
-    """Random embeddings — no systematic chosen/rejected separation."""
-    return {
-        i: rng.standard_normal((N_SAMPLES, HIDDEN_DIM)).astype(np.float32)
-        for i in range(N_LAYERS)
-    }
-
-
-def _make_instruct_layers(rng: np.random.Generator, labels: np.ndarray) -> dict[int, np.ndarray]:
-    """
-    Embeddings where chosen/rejected separation grows across layers,
-    simulating the geometric effect of RLHF alignment.
-    """
+def _make_layers(
+    rng: np.random.Generator,
+    labels: np.ndarray,
+    max_separation: float,
+) -> dict[int, np.ndarray]:
+    """Random embeddings with chosen/rejected separation ramping up across layers."""
     layers = {}
     for i in range(N_LAYERS):
         X = rng.standard_normal((N_SAMPLES, HIDDEN_DIM)).astype(np.float32)
-        # Linearly ramp up the separation signal with layer depth
-        separation = (i / (N_LAYERS - 1)) * 2.0
+        sep = (i / (N_LAYERS - 1)) * max_separation
         signal = np.zeros(HIDDEN_DIM, dtype=np.float32)
-        signal[:64] = separation
+        signal[:64] = sep
         X[labels == 1] += signal
         X[labels == 0] -= signal
         layers[i] = X
@@ -59,12 +52,15 @@ def main() -> None:
     rng = np.random.default_rng(SEED)
     labels = _make_labels()
 
+    # Increasing separation mirrors the SFT → DPO → RLHF alignment progression
     models = {
-        "meta-llama--Meta-Llama-3-8B": _make_base_layers(rng),
-        "meta-llama--Meta-Llama-3-8B-Instruct": _make_instruct_layers(rng, labels),
+        "allenai--Llama-3.1-Tulu-3-8B-SFT": 0.8,
+        "allenai--Llama-3.1-Tulu-3-8B-DPO": 1.5,
+        "allenai--Llama-3.1-Tulu-3-8B":      2.5,
     }
 
-    for slug, layers in models.items():
+    for slug, max_sep in models.items():
+        layers = _make_layers(rng, labels, max_sep)
         path = Path("data/embeddings") / slug / "layers.h5"
         save_embeddings(path, layers, labels)
         print(f"Saved {N_LAYERS} layers × {N_SAMPLES} samples → {path}")

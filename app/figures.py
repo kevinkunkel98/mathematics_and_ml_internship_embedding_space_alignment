@@ -4,12 +4,14 @@ import plotly.graph_objects as go
 _LABEL_COLORS = {0: "#f87171", 1: "#60a5fa"}
 _LABEL_NAMES = {0: "Rejected", 1: "Chosen"}
 _MODEL_COLORS = {
-    "meta-llama--Meta-Llama-3-8B": "#6b7280",
-    "meta-llama--Meta-Llama-3-8B-Instruct": "#7c3aed",
+    "allenai--Llama-3.1-Tulu-3-8B-SFT": "#3b82f6",
+    "allenai--Llama-3.1-Tulu-3-8B-DPO": "#f59e0b",
+    "allenai--Llama-3.1-Tulu-3-8B":      "#7c3aed",
 }
 _MODEL_DISPLAY = {
-    "meta-llama--Meta-Llama-3-8B": "Llama-3-8B (base)",
-    "meta-llama--Meta-Llama-3-8B-Instruct": "Llama-3-8B-Instruct",
+    "allenai--Llama-3.1-Tulu-3-8B-SFT": "Tulu-3-8B SFT",
+    "allenai--Llama-3.1-Tulu-3-8B-DPO": "Tulu-3-8B DPO",
+    "allenai--Llama-3.1-Tulu-3-8B":      "Tulu-3-8B RLHF",
 }
 
 
@@ -42,7 +44,6 @@ def build_metric_line(
     for slug, scores in svc_scores.items():
         layers = sorted(scores.keys())
         accuracies = [scores[l] for l in layers]
-        is_base = "Instruct" not in slug
         fig.add_trace(go.Scatter(
             x=layers,
             y=accuracies,
@@ -50,7 +51,7 @@ def build_metric_line(
             name=_MODEL_DISPLAY.get(slug, slug),
             line=dict(
                 color=_MODEL_COLORS.get(slug, "#aaaaaa"),
-                dash="dash" if is_base else "solid",
+                dash="solid",
                 width=2,
             ),
         ))

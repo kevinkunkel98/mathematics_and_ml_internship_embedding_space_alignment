@@ -12,8 +12,9 @@ from app.vision_compute import fit_vision, fit_vision_umap
 from app.crossmodal_compute import fit_crossmodal
 
 _LLM_MODELS = {
-    "meta-llama--Meta-Llama-3-8B": "Llama-3-8B (base)",
-    "meta-llama--Meta-Llama-3-8B-Instruct": "Llama-3-8B-Instruct",
+    "allenai--Llama-3.1-Tulu-3-8B-SFT": "Tulu-3-8B SFT",
+    "allenai--Llama-3.1-Tulu-3-8B-DPO": "Tulu-3-8B DPO",
+    "allenai--Llama-3.1-Tulu-3-8B":      "Tulu-3-8B RLHF",
 }
 
 _VISION_MODELS = {
@@ -27,10 +28,9 @@ def _load_llm_data() -> dict:
     for slug in _LLM_MODELS:
         path = Path("data/embeddings") / slug / "layers.h5"
         if not path.exists():
-            model_id = slug.replace("--", "/")
             raise FileNotFoundError(
                 f"Missing {path}\n"
-                f"Run: python scripts/extract_embeddings.py --model {model_id}\n"
+                f"Run: python scripts/extract_embeddings.py --trajectory tulu3\n"
                 f"Or:  python scripts/generate_mock_data.py"
             )
         layers, labels = load_embeddings(path)
@@ -136,8 +136,8 @@ _selected_tab_style = {
 _part2_layout = html.Div(
     [
         html.P(
-            "Layer-wise UMAP and LinearSVC separation of chosen vs. rejected responses. "
-            "Does RLHF encode human preference as linearly separable geometry — and where in the network?",
+            "Layer-wise UMAP and LinearSVC separation across the Tulu-3 alignment pipeline (SFT → DPO → RLHF). "
+            "Does human preference become increasingly linearly separable as alignment progresses — and at which layer?",
             style={"color": "#6b7280", "fontSize": "13px", "marginBottom": "12px"},
         ),
         html.Div(
@@ -360,7 +360,7 @@ app.layout = html.Div(
                     children=_part3_layout,
                 ),
                 dcc.Tab(
-                    label="Part 2 — RLHF Geometry · Llama-3-8B Base vs. Instruct",
+                    label="Part 2 — RLHF Geometry · Tulu-3-8B SFT → DPO → RLHF",
                     value="tab-llm",
                     style=_tab_style,
                     selected_style=_selected_tab_style,
