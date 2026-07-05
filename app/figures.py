@@ -66,3 +66,53 @@ def build_metric_line(
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
     return fig
+
+
+def build_drift_line(drift: dict) -> go.Figure:
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=drift["layers"], y=drift["sft_dpo"], mode="lines",
+        name="SFT vs. DPO", line=dict(color="#3b82f6", width=2),
+    ))
+    fig.add_trace(go.Scatter(
+        x=drift["layers"], y=drift["dpo_rlhf"], mode="lines",
+        name="DPO vs. RLHF", line=dict(color="#f59e0b", width=2),
+    ))
+    fig.add_trace(go.Scatter(
+        x=drift["layers"], y=drift["sft_rlhf"], mode="lines",
+        name="SFT vs. RLHF", line=dict(color="#7c3aed", width=2),
+    ))
+    fig.update_layout(
+        title="Representational drift across alignment stages (Linear CKA)",
+        xaxis_title="Layer",
+        yaxis_title="Linear CKA",
+        margin=dict(l=40, r=20, t=40, b=40),
+        template="plotly_dark",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    return fig
+
+
+def build_geometry_line(
+    scores: dict[str, dict[int, float]], title: str, yaxis_title: str
+) -> go.Figure:
+    fig = go.Figure()
+    for slug, values in scores.items():
+        layers = sorted(values.keys())
+        ys = [values[l] for l in layers]
+        fig.add_trace(go.Scatter(
+            x=layers,
+            y=ys,
+            mode="lines",
+            name=_MODEL_DISPLAY.get(slug, slug),
+            line=dict(color=_MODEL_COLORS.get(slug, "#aaaaaa"), width=2),
+        ))
+    fig.update_layout(
+        title=title,
+        xaxis_title="Layer",
+        yaxis_title=yaxis_title,
+        margin=dict(l=40, r=20, t=40, b=40),
+        template="plotly_dark",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    return fig

@@ -10,6 +10,9 @@ from scripts.io import load_embeddings, load_vision_data
 from app.compute import fit_all
 from app.vision_compute import fit_vision, fit_vision_umap
 from app.crossmodal_compute import fit_crossmodal
+from app.rlhf_drift_compute import fit_rlhf_drift
+from app.rlhf_geometry_compute import fit_rlhf_geometry
+from app.figures import build_drift_line, build_geometry_line
 
 _LLM_MODELS = {
     "allenai--Llama-3.1-Tulu-3-8B-SFT": "Tulu-3-8B SFT",
@@ -36,7 +39,9 @@ def _load_llm_data() -> dict:
         layers, labels = load_embeddings(path)
         print(f"Fitting projections for {slug} ...")
         cache = fit_all(slug, layers, labels)
-        data[slug] = {"cache": cache, "labels": labels}
+        print(f"Fitting geometry metrics for {slug} ...")
+        geometry = fit_rlhf_geometry(slug, layers, labels)
+        data[slug] = {"cache": cache, "labels": labels, "geometry": geometry}
     return data
 
 
@@ -91,6 +96,12 @@ def _load_vision_data() -> dict | None:
 
 APP_DATA = _load_llm_data()
 VISION_DATA = _load_vision_data()
+
+RLHF_DRIFT = fit_rlhf_drift(
+    Path("data/embeddings/allenai--Llama-3.1-Tulu-3-8B-SFT/layers.h5"),
+    Path("data/embeddings/allenai--Llama-3.1-Tulu-3-8B-DPO/layers.h5"),
+    Path("data/embeddings/allenai--Llama-3.1-Tulu-3-8B/layers.h5"),
+)
 
 
 def _load_crossmodal_data() -> dict | None:
@@ -198,6 +209,61 @@ _part2_layout = html.Div(
         ),
         dcc.Graph(id="scatter", style={"height": "460px"}),
         dcc.Graph(id="metric-line", style={"height": "220px"}),
+        html.P(
+            "Negative finding: LinearSVC separation of chosen/rejected stays near chance "
+            "(~0.51–0.55) across every layer and every checkpoint above — last-token "
+            "pooled representations show no strong linearly separable preference signal, "
+            "in any of SFT, DPO, or RLHF.",
+            style={"color": "#f87171", "fontSize": "12px", "marginTop": "8px", "marginBottom": "20px"},
+        ),
+        html.Hr(style={"margin": "8px 0 20px 0", "borderColor": "#333"}),
+        html.H4("Representational Drift Across Alignment Stages", style={"marginBottom": "4px"}),
+        html.P(
+            "Linear CKA between checkpoints on the same inputs, layer by layer. "
+            "Most of the shift happens at the SFT→DPO step; the subsequent RLHF step "
+            "changes the geometry only marginally (DPO vs. RLHF CKA stays above 0.999 "
+            "through layer 32).",
+            style={"color": "#6b7280", "fontSize": "13px", "marginBottom": "12px"},
+        ),
+        dcc.Graph(id="drift-line", figure=build_drift_line(RLHF_DRIFT), style={"height": "320px"}),
+        html.Hr(style={"margin": "8px 0 20px 0", "borderColor": "#333"}),
+        html.H4("Geometry Diagnostics", style={"marginBottom": "4px"}),
+        html.P(
+            "Anisotropy: average cosine similarity between random embedding pairs — near 1 means "
+            "representations collapse into a narrow cone. Cohen's d: chosen/rejected separation "
+            "projected onto the single best linear direction — detects a subtle effect even where "
+            "LinearSVC (regularized, full-dimensional) found none. Effective rank: how many "
+            "dimensions the representation actually uses (participation ratio of the covariance "
+            "spectrum).",
+            style={"color": "#6b7280", "fontSize": "13px", "marginBottom": "12px"},
+        ),
+        dcc.Graph(
+            id="anisotropy-line",
+            figure=build_geometry_line(
+                {slug: d["geometry"]["anisotropy"] for slug, d in APP_DATA.items()},
+                title="Anisotropy per layer",
+                yaxis_title="Avg. cosine similarity",
+            ),
+            style={"height": "280px"},
+        ),
+        dcc.Graph(
+            id="cohens-d-line",
+            figure=build_geometry_line(
+                {slug: d["geometry"]["cohens_d"] for slug, d in APP_DATA.items()},
+                title="Chosen vs. rejected effect size (Cohen's d) per layer",
+                yaxis_title="Cohen's d",
+            ),
+            style={"height": "280px"},
+        ),
+        dcc.Graph(
+            id="effective-rank-line",
+            figure=build_geometry_line(
+                {slug: d["geometry"]["effective_rank"] for slug, d in APP_DATA.items()},
+                title="Effective rank per layer",
+                yaxis_title="Effective rank",
+            ),
+            style={"height": "280px"},
+        ),
     ]
 )
 
