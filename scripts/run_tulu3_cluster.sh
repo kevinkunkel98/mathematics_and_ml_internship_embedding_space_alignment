@@ -10,11 +10,11 @@
 #SBATCH --output=%x-%j.out
 #SBATCH --error=%x-%j.err
 
-source myenv/bin/activate
+source "$HOME/myenv/bin/activate"
 
 nvidia-smi
 
-cd mathematics_and_ml_internship_embedding_space_alignment
+cd "$HOME/mathematics_and_ml_internship_embedding_space_alignment"
 
 python scripts/extract_embeddings.py \
     --trajectory tulu3 \
