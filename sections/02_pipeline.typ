@@ -18,8 +18,8 @@
 
     let stage(x, y, title, body, w: 4.6, h: 2.0) = {
       rect((x, y - h / 2), (x + w, y + h / 2), fill: rgb("#f5f8ff"), stroke: 1pt + navy, radius: 4pt)
-      content((x + w / 2, y + h / 2 - 0.45), text(fill: navy, size: 0.3cm, weight: "bold")[#title])
-      content((x + w / 2, y - 0.15), text(fill: luma(60), size: 0.22cm)[#body])
+      content((x + w / 2, y + h / 2 - 0.45), text(fill: navy, size: 0.38cm, weight: "bold")[#title])
+      content((x + w / 2, y - 0.15), text(fill: luma(60), size: 0.34cm)[#body])
     }
 
     let arrow(..pts) = line(..pts, stroke: (paint: navy, thickness: 1.8pt), mark: (end: ">", size: 0.32))

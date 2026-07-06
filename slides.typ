@@ -149,8 +149,10 @@
 
 #include "sections/05_plot_gallery.typ"
 
-#include "sections/06_part1_outlook.typ"
+#include "sections/06_findings_story.typ"
 
-#include "sections/07_conclusion.typ"
+#include "sections/07_part1_outlook.typ"
 
-#include "sections/08_references.typ"
+#include "sections/08_conclusion.typ"
+
+#include "sections/09_references.typ"
