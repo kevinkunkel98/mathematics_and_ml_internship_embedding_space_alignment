@@ -141,10 +141,16 @@
 
 #include "sections/01_intro.typ"
 
-#include "sections/02_part2_results.typ"
+#include "sections/02_pipeline.typ"
 
-#include "sections/03_part1_outlook.typ"
+#include "sections/03_metrics.typ"
 
-#include "sections/04_conclusion.typ"
+#include "sections/04_part2_results.typ"
 
-#include "sections/05_references.typ"
+#include "sections/05_plot_gallery.typ"
+
+#include "sections/06_part1_outlook.typ"
+
+#include "sections/07_conclusion.typ"
+
+#include "sections/08_references.typ"
