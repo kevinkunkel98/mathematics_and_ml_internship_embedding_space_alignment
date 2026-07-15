@@ -29,7 +29,7 @@
   footer: [Leipzig, 09.07.2026],
 )
 
-#set text(size: 17pt)
+#set text(size: 19pt)
 
 // ── Embedding space diagram for title slide ───────────────────────────────────
 #let embedding-diagram = canvas(length: 1cm, {
@@ -149,6 +149,8 @@
 
 #include "sections/05_part2_results.typ"
 
+#include "sections/05b_context_and_limits.typ"
+
 #include "sections/06_plot_gallery.typ"
 
 #include "sections/07_findings_story.typ"
@@ -158,3 +160,5 @@
 #include "sections/09_conclusion.typ"
 
 #include "sections/10_references.typ"
+
+#include "sections/10b_references_part2.typ"

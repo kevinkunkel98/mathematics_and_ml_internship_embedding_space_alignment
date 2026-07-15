@@ -93,6 +93,35 @@ def build_drift_line(drift: dict) -> go.Figure:
     return fig
 
 
+def build_rlhf_cka_heatmap(
+    matrix: np.ndarray, layer_names: list[str], title: str, y_label: str, x_label: str
+) -> go.Figure:
+    # RLHF checkpoints are all highly similar (CKA ~0.85-1.0) — unlike the Part 1
+    # cross-modal heatmap, a fixed [0, 1] scale would flatten all the real structure
+    # into a thin sliver at the top of the colorscale. Autoscale to the data instead.
+    zmin = float(np.floor(matrix.min() * 20) / 20)  # round down to nearest 0.05
+    fig = go.Figure(
+        go.Heatmap(
+            z=matrix,
+            x=layer_names,
+            y=layer_names,
+            colorscale="Viridis",
+            zmin=zmin,
+            zmax=1.0,
+            colorbar=dict(title="CKA", thickness=15),
+            hovertemplate=f"{y_label} %{{y}}<br>{x_label} %{{x}}<br>CKA: %{{z:.3f}}<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        title=title,
+        xaxis_title=x_label,
+        yaxis_title=y_label,
+        margin=dict(l=80, r=20, t=60, b=80),
+        template="plotly_dark",
+    )
+    return fig
+
+
 def build_geometry_line(
     scores: dict[str, dict[int, float]], title: str, yaxis_title: str
 ) -> go.Figure:

@@ -44,4 +44,9 @@
     _Tulu 3: Pushing Frontiers in Open Language Model Post-Training_ \
     #text(fill: luma(100))[arXiv:2411.15124 · *Models used for Part 2*]
   ],
+  [
+    #text(weight: "bold", fill: navy)[Huh, Cheung, Wang, Isola (2024)] \
+    _Position: The Platonic Representation Hypothesis_ \
+    #text(fill: luma(100))[ICML · arXiv:2405.07987 · *"Models converge inherently" framing*]
+  ],
 )

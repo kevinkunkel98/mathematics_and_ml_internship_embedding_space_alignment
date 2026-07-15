@@ -10,24 +10,30 @@
 #grid(
   columns: (1fr, 1fr, 1fr),
   gutter: 0.7em,
-  definition([SFT], [
-    #text(size: 0.8em)[
-      `Llama-3.1-Tulu-3-8B-SFT` \
-      Supervised fine-tuning on curated instruction/response demonstrations. Model learns to follow instructions — no preference signal yet.
-    ]
-  ]),
-  definition([DPO], [
-    #text(size: 0.8em)[
-      `Llama-3.1-Tulu-3-8B-DPO` \
-      Direct Preference Optimization on chosen/rejected pairs. Directly increases $p("chosen")$ over $p("rejected")$ — no explicit reward model.
-    ]
-  ]),
-  definition([RLHF], [
-    #text(size: 0.8em)[
-      `Llama-3.1-Tulu-3-8B` \
-      Final RL stage on top of DPO (Tulu-3's RLVR — verifiable rewards on math/precise tasks). Labeled *RLHF* here for consistency with Part 1.
-    ]
-  ]),
+  [
+    #text(weight: "bold", fill: sage, size: 1.1em)[SFT]
+    #v(0.2em)
+    #text(size: 0.72em)[`Llama-3.1-Tulu-3-8B-SFT`]
+    #v(0.2em)
+    - Instruction fine-tuning
+    - No preference signal yet
+  ],
+  [
+    #text(weight: "bold", fill: sage, size: 1.1em)[DPO]
+    #v(0.2em)
+    #text(size: 0.72em)[`Llama-3.1-Tulu-3-8B-DPO`]
+    #v(0.2em)
+    - Chosen > rejected, directly
+    - No reward model
+  ],
+  [
+    #text(weight: "bold", fill: sage, size: 1.1em)[RLHF]
+    #v(0.2em)
+    #text(size: 0.72em)[`Llama-3.1-Tulu-3-8B`]
+    #v(0.2em)
+    - Final RL stage (Tulu-3's RLVR)
+    - Labeled *RLHF* for Part 1 consistency
+  ],
 )
 
 #v(0.5em)

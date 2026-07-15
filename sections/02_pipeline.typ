@@ -26,7 +26,7 @@
 
     // ── Row 1 ──────────────────────────────────────────────────────────────
     let y1 = 1.7
-    stage(-14.6, y1, [Anthropic/hh-rlhf], [4,000 chosen/\ rejected pairs])
+    stage(-14.6, y1, [Anthropic/hh-rlhf], [2,000 pairs →\ 4,000 texts])
     arrow((-10.0, y1), (-9.3, y1))
     stage(-9.3, y1, [Cluster extraction], [SLURM · Tulu-3-8B\ SFT / DPO / RLHF])
     arrow((-4.7, y1), (-4.0, y1))

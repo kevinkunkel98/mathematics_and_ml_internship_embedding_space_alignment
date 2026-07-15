@@ -10,9 +10,9 @@ from scripts.io import load_embeddings, load_vision_data
 from app.compute import fit_all
 from app.vision_compute import fit_vision, fit_vision_umap
 from app.crossmodal_compute import fit_crossmodal
-from app.rlhf_drift_compute import fit_rlhf_drift
+from app.rlhf_drift_compute import fit_rlhf_drift, fit_rlhf_cka_matrices
 from app.rlhf_geometry_compute import fit_rlhf_geometry
-from app.figures import build_drift_line, build_geometry_line
+from app.figures import build_drift_line, build_geometry_line, build_rlhf_cka_heatmap
 
 _LLM_MODELS = {
     "allenai--Llama-3.1-Tulu-3-8B-SFT": "Tulu-3-8B SFT",
@@ -98,6 +98,12 @@ APP_DATA = _load_llm_data()
 VISION_DATA = _load_vision_data()
 
 RLHF_DRIFT = fit_rlhf_drift(
+    Path("data/embeddings/allenai--Llama-3.1-Tulu-3-8B-SFT/layers.h5"),
+    Path("data/embeddings/allenai--Llama-3.1-Tulu-3-8B-DPO/layers.h5"),
+    Path("data/embeddings/allenai--Llama-3.1-Tulu-3-8B/layers.h5"),
+)
+
+RLHF_CKA_MATRICES = fit_rlhf_cka_matrices(
     Path("data/embeddings/allenai--Llama-3.1-Tulu-3-8B-SFT/layers.h5"),
     Path("data/embeddings/allenai--Llama-3.1-Tulu-3-8B-DPO/layers.h5"),
     Path("data/embeddings/allenai--Llama-3.1-Tulu-3-8B/layers.h5"),
@@ -221,11 +227,42 @@ _part2_layout = html.Div(
         html.P(
             "Linear CKA between checkpoints on the same inputs, layer by layer. "
             "Most of the shift happens at the SFT→DPO step; the subsequent RLHF step "
-            "changes the geometry only marginally (DPO vs. RLHF CKA stays above 0.999 "
-            "through layer 32).",
+            "changes the geometry only marginally (DPO vs. RLHF CKA stays near 0.999, "
+            "min 0.9990, through layer 32).",
             style={"color": "#6b7280", "fontSize": "13px", "marginBottom": "12px"},
         ),
         dcc.Graph(id="drift-line", figure=build_drift_line(RLHF_DRIFT), style={"height": "320px"}),
+        html.Hr(style={"margin": "8px 0 20px 0", "borderColor": "#333"}),
+        html.H4("Layer-wise CKA Heatmaps", style={"marginBottom": "4px"}),
+        html.P(
+            "Full layer-by-layer CKA, not just matched layer indices — shows whether "
+            "representations shift to a different layer depth, not only how much they drift.",
+            style={"color": "#6b7280", "fontSize": "13px", "marginBottom": "12px"},
+        ),
+        dcc.Graph(
+            id="rlhf-cka-heatmap-sft-dpo",
+            figure=build_rlhf_cka_heatmap(
+                RLHF_CKA_MATRICES["sft_dpo"], RLHF_CKA_MATRICES["layer_names"],
+                "Linear CKA: SFT layers vs. DPO layers", "SFT layer", "DPO layer",
+            ),
+            style={"height": "480px"},
+        ),
+        dcc.Graph(
+            id="rlhf-cka-heatmap-dpo-rlhf",
+            figure=build_rlhf_cka_heatmap(
+                RLHF_CKA_MATRICES["dpo_rlhf"], RLHF_CKA_MATRICES["layer_names"],
+                "Linear CKA: DPO layers vs. RLHF layers", "DPO layer", "RLHF layer",
+            ),
+            style={"height": "480px"},
+        ),
+        dcc.Graph(
+            id="rlhf-cka-heatmap-sft-rlhf",
+            figure=build_rlhf_cka_heatmap(
+                RLHF_CKA_MATRICES["sft_rlhf"], RLHF_CKA_MATRICES["layer_names"],
+                "Linear CKA: SFT layers vs. RLHF layers", "SFT layer", "RLHF layer",
+            ),
+            style={"height": "480px"},
+        ),
         html.Hr(style={"margin": "8px 0 20px 0", "borderColor": "#333"}),
         html.H4("Geometry Diagnostics", style={"marginBottom": "4px"}),
         html.P(

@@ -11,36 +11,31 @@
   gutter: 0.9em,
   align: top,
   [
-    #block(fill: navy, inset: (x: 0.7em, y: 0.4em), radius: (top: 3pt), width: 100%)[
-      #text(fill: white, weight: "bold", size: 0.82em)[Negative finding]
-    ]
-    #block(fill: mint, inset: (x: 0.8em, y: 0.5em), radius: (bottom: 3pt), stroke: (left: 3pt + sage), width: 100%)[
-      #text(size: 0.85em)[Chosen/rejected preference is not linearly encoded in last-token pooled representations, at any alignment stage]
-
-      #v(0.25em)
-      #text(size: 0.8em)[
-        - Peak LinearSVC accuracy near chance in all 3 checkpoints — SFT 0.543, DPO 0.544, RLHF 0.550 (layer 14)
-        - Peak Cohen's d small and flat — 0.183 → 0.193 → 0.194
-        - No phase transition: alignment does not linearly reorganize preference geometry
-      ]
-    ]
+    #text(weight: "bold", fill: navy, size: 1em)[Negative finding]
+    #v(0.25em)
+    - Not linearly encoded, any stage
+    - LinearSVC peak: 0.543 / 0.544 / 0.550
+    - Near chance, all 3 checkpoints (layer 14)
+    - Cohen's d peak: 0.183 → 0.193 → 0.194
+    - No phase transition in preference geometry
   ],
   [
-    #block(fill: navy, inset: (x: 0.7em, y: 0.4em), radius: (top: 3pt), width: 100%)[
-      #text(fill: white, weight: "bold", size: 0.82em)[But the geometry does shift]
-    ]
-    #block(fill: sky, inset: (x: 0.8em, y: 0.5em), radius: (bottom: 3pt), stroke: (left: 3pt + blue), width: 100%)[
-      #text(size: 0.85em)[Representational drift (Linear CKA, same inputs, layer by layer):]
-
-      #v(0.25em)
-      #text(size: 0.8em)[
-        - CKA(SFT, DPO) drops to *0.976* by layer 32 — most of the shift happens here
-        - CKA(DPO, RLHF) stays above *0.999* through layer 32 — RLHF/PPO barely moves geometry further
-        - Shift is concentrated at SFT→DPO — not a chosen/rejected separator, a general representational shift
-      ]
-
-      #v(0.2em)
-      #text(size: 0.72em, fill: luma(80))[Full curves (SVC, Cohen's d, CKA drift, anisotropy, effective rank) in the dashboard · Part 2 tab]
-    ]
+    #text(weight: "bold", fill: navy, size: 1em)[But the geometry does shift]
+    #v(0.25em)
+    - Linear CKA, same inputs, layer by layer
+    - CKA(SFT, DPO) drops to *0.976* by layer 32
+    - Most of the shift happens SFT→DPO
+    - CKA(DPO, RLHF) stays near *0.999*
+    - RLHF/PPO barely moves geometry further
+    #v(0.2em)
+    #text(size: 0.72em, fill: luma(80))[Full curves in the dashboard · Part 2 tab]
   ],
 )
+
+#v(0.3em)
+// NOTE: 63% figure per Bai et al. 2022 abstract+recollection — verify against full PDF text
+// before final submission (abstract pages don't expose body stats).
+#remark[
+  Peak accuracy near 0.55 matches published `hh-rlhf` baselines (0.57–0.66) and the dataset's own
+  ~63% label-agreement ceiling (Bai et al., 2022).
+]
