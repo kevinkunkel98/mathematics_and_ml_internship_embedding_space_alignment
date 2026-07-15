@@ -141,6 +141,10 @@
 
 #include "sections/01_intro.typ"
 
+#include "sections/01b_part1_pipeline.typ"
+
+#include "sections/01c_rlhf_background.typ"
+
 #include "sections/02_pipeline.typ"
 
 #include "sections/03_model_stages.typ"
