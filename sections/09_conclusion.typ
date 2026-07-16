@@ -1,7 +1,7 @@
 #import "../helpers.typ": *
 
 // --------------------------------------------------------------------------
-== Deliverable & Next Steps
+== Deliverable & Honest Limitations
 
 #v(0.3em)
 #grid(
@@ -9,9 +9,9 @@
   gutter: 0.9em,
   align: top,
   [
-    #image("../assets/slides/dashboard_vit_umap.png")
+    #image("../assets/slides/Drift.png")
     #v(0.1em)
-    #text(size: 8.5pt, fill: luma(120))[Interactive Plotly Dash · CKA heatmap · UMAP layer slider · LinearSVC score]
+    #text(size: 8.5pt, fill: luma(120))[Interactive Plotly Dash · CKA heatmaps · layer sliders · UMAP/t-SNE · SVC score]
   ],
   [
     #block(fill: navy, inset: (x: 0.7em, y: 0.4em), radius: (top: 3pt), width: 100%)[
@@ -23,10 +23,13 @@
 
     #v(0.3em)
     #block(fill: navy, inset: (x: 0.7em, y: 0.4em), radius: (top: 3pt), width: 100%)[
-      #text(fill: white, weight: "bold", size: 0.8em)[Perspective]
+      #text(fill: white, weight: "bold", size: 0.8em)[Limitations & learnings]
     ]
     #block(fill: sky, inset: (x: 0.7em, y: 0.45em), radius: (bottom: 3pt), stroke: (left: 3pt + blue), width: 100%)[
-      Extend to RLHF training *snapshots* — plot cross-modal CKA vs. training step to see if alignment shifts *during* RLHF
+      #text(size: 0.78em)[
+        - *Part 2:* last-token pooling only — paired-difference probes reach ~84% in the literature vs. our ~55% peak
+        - *Part 1:* float16 overflow in extraction — later vision layers, most `phase_1` language layers came back `inf`
+      ]
     ]
   ],
 )

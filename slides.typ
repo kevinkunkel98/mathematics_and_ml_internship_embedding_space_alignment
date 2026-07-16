@@ -26,7 +26,7 @@
     date: [Summer Semester 2026],
     institution: [Universität Leipzig — Mathematics & Machine Learning Internship \ Supervisor: Dr. Diaaeldin Taha],
   ),
-  footer: [Leipzig, 09.07.2026],
+  footer: [Leipzig, 16.07.2026],
 )
 
 #set text(size: 19pt)
@@ -143,23 +143,17 @@
 
 #include "sections/01b_part1_pipeline.typ"
 
+#include "sections/08_part1_outlook.typ"
+
 #include "sections/01c_rlhf_background.typ"
 
 #include "sections/02_pipeline.typ"
 
 #include "sections/03_model_stages.typ"
 
-#include "sections/04_metrics.typ"
-
 #include "sections/05_part2_results.typ"
 
-#include "sections/05b_context_and_limits.typ"
-
-#include "sections/06_plot_gallery.typ"
-
 #include "sections/07_findings_story.typ"
-
-#include "sections/08_part1_outlook.typ"
 
 #include "sections/09_conclusion.typ"
 

@@ -48,6 +48,7 @@
 #grid(
   columns: (1fr, 1fr, 1fr),
   gutter: 0.8em,
+  align: top,
   [
     #text(weight: "bold", fill: sage, size: 1.05em)[1. Collect preference data]
     #v(0.2em)
@@ -81,6 +82,6 @@
 #v(0.4em)
 #remark[
   #text(size: 0.85em)[
-    Our third checkpoint (`Llama-3.1-Tulu-3-8B`) is *not* this pipeline. Tulu-3 replaces steps 2–3 with *RLVR* (Reinforcement Learning with Verifiable Rewards) — rule-based, verifiable rewards (math/code correctness, constraint checks), no learned reward model at all. We call it "RLHF" only for consistency with Part 1's vocabulary. The *DPO* checkpoint skips the reward model differently — it optimizes directly on the implicit log-ratio $beta log( (pi_theta (y|x)) / (pi_"ref" (y|x)) )$ between chosen and rejected, with no reward model or RL loop at all.
+    Neither of our checkpoints follows this exactly: DPO skips the reward model entirely, and our "RLHF" checkpoint is actually *RLVR* (rule-based, verifiable rewards, no learned reward model) — kept as "RLHF" only for consistency with Part 1's vocabulary.
   ]
 ]

@@ -6,10 +6,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dash import Dash, dcc, html
 
-from scripts.io import load_embeddings, load_vision_data
+from scripts.io import load_embeddings
 from app.compute import fit_all
-from app.vision_compute import fit_vision, fit_vision_umap
-from app.crossmodal_compute import fit_crossmodal
+from app.part1_phase_compute import compute_supercategory_alignment, compute_phase_cka_matrices
+from app.part1_phase_figures import (
+    build_supercategory_dumbbell,
+    build_phase_cka_heatmaps,
+    build_phase_scalar_bar,
+)
 from app.rlhf_drift_compute import fit_rlhf_drift, fit_rlhf_cka_matrices
 from app.rlhf_geometry_compute import fit_rlhf_geometry
 from app.figures import build_drift_line, build_geometry_line, build_rlhf_cka_heatmap
@@ -18,11 +22,6 @@ _LLM_MODELS = {
     "allenai--Llama-3.1-Tulu-3-8B-SFT": "Tulu-3-8B SFT",
     "allenai--Llama-3.1-Tulu-3-8B-DPO": "Tulu-3-8B DPO",
     "allenai--Llama-3.1-Tulu-3-8B":      "Tulu-3-8B RLHF",
-}
-
-_VISION_MODELS = {
-    "resnet18": "ResNet-18",
-    "vit_b16": "ViT-B/16",
 }
 
 
@@ -45,57 +44,7 @@ def _load_llm_data() -> dict:
     return data
 
 
-def _load_vision_data() -> dict | None:
-    try:
-        vision = {}
-        for slug in _VISION_MODELS:
-            path = Path("data/vision") / f"{slug}.h5"
-            if not path.exists():
-                raise FileNotFoundError(
-                    f"Missing {path}\nRun: python scripts/generate_mock_vision.py"
-                )
-            activations, labels, images, cams, class_names = load_vision_data(path)
-            vision[slug] = {
-                "activations": activations,
-                "labels": labels,
-                "images": images,
-                "cams": cams,
-                "class_names": class_names,
-            }
-            print(
-                f"Loaded vision {slug}: {len(activations)} layers, {len(labels)} samples"
-            )
-
-        print("Fitting CKA...")
-        cka = fit_vision(
-            vision["resnet18"]["activations"], vision["vit_b16"]["activations"]
-        )
-
-        print("Fitting vision UMAP...")
-        umap_data = fit_vision_umap(
-            vision["resnet18"]["activations"], vision["vit_b16"]["activations"]
-        )
-
-        return {
-            "cka": cka,
-            "labels": vision["resnet18"]["labels"],
-            "images": vision["resnet18"]["images"],
-            "cnn_cams": vision["resnet18"]["cams"],
-            "vit_cams": vision["vit_b16"]["cams"],
-            "umap": umap_data,
-            "class_names": vision["resnet18"]["class_names"],
-            "model_labels": _VISION_MODELS,
-            "n_layers": {
-                slug: max(vision[slug]["activations"].keys()) for slug in _VISION_MODELS
-            },
-        }
-    except FileNotFoundError as e:
-        print(f"[vision] Skipping Part 1 — {e}")
-        return None
-
-
 APP_DATA = _load_llm_data()
-VISION_DATA = _load_vision_data()
 
 RLHF_DRIFT = fit_rlhf_drift(
     Path("data/embeddings/allenai--Llama-3.1-Tulu-3-8B-SFT/layers.h5"),
@@ -110,32 +59,42 @@ RLHF_CKA_MATRICES = fit_rlhf_cka_matrices(
 )
 
 
-def _load_crossmodal_data() -> dict | None:
+_PART1_DATA_DIR = Path("data/embeddings part 1")
+_PART1_VISION_PHASE1 = _PART1_DATA_DIR / "vision/llama_3B_coco_multilabel_phase_1.h5"
+_PART1_VISION_FULL = _PART1_DATA_DIR / "vision/llama_3B_coco_multilabel_full_train_set.h5"
+_PART1_LANGUAGE_PHASE1 = _PART1_DATA_DIR / "language/llama_3B_coco_multilabel_phase_1/layers.h5"
+_PART1_LANGUAGE_FULL = _PART1_DATA_DIR / "language/llama_3B_coco_multilabel_full_train_set/layers.h5"
+
+
+def _load_part1_data() -> dict | None:
     try:
-        base_path = Path("data/embeddings/crossmodal/llama-base.h5")
-        instruct_path = Path("data/embeddings/crossmodal/llama-instruct.h5")
-        vision_path = Path("data/embeddings/crossmodal/vision.h5")
-        clip_path = Path("data/embeddings/crossmodal/clip-text.h5")
-
-        for p in (base_path, instruct_path, vision_path):
+        for p in (_PART1_VISION_PHASE1, _PART1_VISION_FULL, _PART1_LANGUAGE_PHASE1, _PART1_LANGUAGE_FULL):
             if not p.exists():
-                raise FileNotFoundError(
-                    f"Missing {p}\nRun: python scripts/generate_mock_crossmodal.py"
-                )
+                raise FileNotFoundError(f"Missing {p}")
 
-        base_layers, _ = load_embeddings(base_path)
-        instruct_layers, _ = load_embeddings(instruct_path)
-        vision_layers, _ = load_embeddings(vision_path)
-        clip_layers = load_embeddings(clip_path)[0] if clip_path.exists() else None
+        print("Fitting Part 1 cross-modal CKA matrices...")
+        matrices = compute_phase_cka_matrices(
+            vision_phase1_path=str(_PART1_VISION_PHASE1),
+            vision_full_path=str(_PART1_VISION_FULL),
+            language_phase1_path=str(_PART1_LANGUAGE_PHASE1),
+            language_full_path=str(_PART1_LANGUAGE_FULL),
+        )
 
-        print("Fitting cross-modal CKA...")
-        return fit_crossmodal(vision_layers, base_layers, instruct_layers, clip_layers)
+        print("Fitting Part 1 supercategory alignment...")
+        supercategory = compute_supercategory_alignment(
+            vision_phase1_path=str(_PART1_VISION_PHASE1),
+            vision_full_path=str(_PART1_VISION_FULL),
+            language_phase1_path=str(_PART1_LANGUAGE_PHASE1),
+            language_full_path=str(_PART1_LANGUAGE_FULL),
+        )
+
+        return {"matrices": matrices, "supercategory": supercategory}
     except FileNotFoundError as e:
-        print(f"[crossmodal] Skipping Part 3 — {e}")
+        print(f"[part1] Skipping Part 1 — {e}")
         return None
 
 
-CROSSMODAL_DATA = _load_crossmodal_data()
+PART1_DATA = _load_part1_data()
 
 N_LAYERS = max(next(iter(APP_DATA.values()))["cache"]["umap"].keys())
 
@@ -306,134 +265,46 @@ _part2_layout = html.Div(
 
 # ── Part 1 layout ─────────────────────────────────────────────────────────────
 
-if VISION_DATA is not None:
-    _vision_max_layer = max(VISION_DATA["n_layers"].values())
-    _vision_layer_marks = {
-        i: str(i)
-        for i in range(0, _vision_max_layer + 1, max(1, _vision_max_layer // 6))
-    }
-    _vision_layer_marks[_vision_max_layer] = str(_vision_max_layer)
-
-    _vision_class_names = VISION_DATA.get("class_names") or [
-        str(i) for i in range(int(VISION_DATA["labels"].max()) + 1)
-    ]
-
-    _part1_layout = html.Div(
-        [
-            # ── CKA heatmap ───────────────────────────────────────────────────
-            dcc.Graph(id="cka-heatmap", style={"height": "480px"}),
-            # ── Vision UMAP ───────────────────────────────────────────────────
-            html.Hr(style={"margin": "24px 0", "borderColor": "#333"}),
-            html.H4(
-                "Layer Activation Space — UMAP",
-                style={"marginBottom": "12px"},
-            ),
-            html.Div(
-                [
-                    html.Div(
-                        [
-                            html.Label("Model", style={"fontWeight": "bold"}),
-                            dcc.RadioItems(
-                                id="vision-model-selector",
-                                options=[
-                                    {"label": "ResNet-18", "value": "resnet18"},
-                                    {"label": "ViT-B/16", "value": "vit_b16"},
-                                ],
-                                value="resnet18",
-                                inline=True,
-                                inputStyle={"marginRight": "4px"},
-                                labelStyle={"marginRight": "16px"},
-                            ),
-                        ],
-                        style={"marginBottom": "12px"},
-                    ),
-                    html.Div(
-                        [
-                            html.Label(
-                                id="vision-layer-label",
-                                style={"fontWeight": "bold"},
-                            ),
-                            dcc.Slider(
-                                id="vision-layer-slider",
-                                min=0,
-                                max=_vision_max_layer,
-                                step=1,
-                                value=0,
-                                marks=_vision_layer_marks,
-                                tooltip={
-                                    "placement": "bottom",
-                                    "always_visible": False,
-                                },
-                            ),
-                        ],
-                        style={"marginBottom": "8px"},
-                    ),
-                ]
-            ),
-            dcc.Graph(id="vision-umap", style={"height": "460px"}),
-            # ── CAM comparison ────────────────────────────────────────────────
-            html.Hr(style={"margin": "24px 0", "borderColor": "#333"}),
-            html.Div(
-                [
-                    html.Label("Filter CAMs by class", style={"fontWeight": "bold"}),
-                    dcc.Dropdown(
-                        id="class-selector",
-                        options=[{"label": "All classes", "value": "all"}]
-                        + [
-                            {"label": c, "value": i}
-                            for i, c in enumerate(_vision_class_names)
-                        ],
-                        value="all",
-                        clearable=False,
-                        style={"width": "240px", "color": "#111"},
-                    ),
-                ],
-                style={"marginBottom": "16px"},
-            ),
-            dcc.Graph(id="cam-comparison"),
-        ]
-    )
-else:
+if PART1_DATA is not None:
     _part1_layout = html.Div(
         [
             html.P(
-                "Vision data not found. Run: python scripts/generate_mock_vision.py",
-                style={"color": "#f87171", "padding": "32px"},
-            )
-        ]
-    )
-
-# ── Part 3 layout ─────────────────────────────────────────────────────────────
-
-if CROSSMODAL_DATA is not None:
-    _part3_layout = html.Div(
-        [
-            html.P(
-                "CKA between DINOv2 (vision) and Llama-3-8B (language) on matched MS-COCO (image, caption) pairs. "
-                "Does a shared representational structure emerge? CLIP sets the upper bound.",
+                "Cross-modal CKA between DINOv2 (vision teacher) and Llama-3B (language student) "
+                "on matched MS-COCO (image, caption) pairs, comparing the phase_1 baseline against "
+                "the full_train_set checkpoint after teacher-student CKA fine-tuning. "
+                "Does a shared representational structure emerge — and does it strengthen with training?",
                 style={"color": "#6b7280", "fontSize": "13px", "marginBottom": "12px"},
             ),
-            html.Div(
-                [
-                    html.Label("Show CLIP upper bound", style={"fontWeight": "bold"}),
-                    dcc.Checklist(
-                        id="crossmodal-clip-toggle",
-                        options=[{"label": " CLIP ViT-B/32 (explicitly trained for cross-modal alignment)", "value": "clip"}],
-                        value=["clip"] if CROSSMODAL_DATA["clip"] is not None else [],
-                        inputStyle={"marginRight": "6px"},
-                    ),
-                ],
-                style={"marginBottom": "16px"},
+            dcc.Graph(
+                id="part1-cka-heatmaps",
+                figure=build_phase_cka_heatmaps(PART1_DATA["matrices"]),
+                style={"height": "460px"},
             ),
-            dcc.Graph(id="crossmodal-heatmaps", style={"height": "440px"}),
-            dcc.Graph(id="crossmodal-scalar-bar", style={"height": "320px"}),
+            dcc.Graph(
+                id="part1-scalar-bar",
+                figure=build_phase_scalar_bar(PART1_DATA["matrices"]),
+                style={"height": "320px"},
+            ),
+            html.Hr(style={"margin": "24px 0", "borderColor": "#333"}),
+            html.H4("Cross-modal Alignment by COCO Supercategory", style={"marginBottom": "4px"}),
+            html.P(
+                "Linear CKA between vision and language activations (last clean layer of each), "
+                "grouped into the 12 COCO supercategories, comparing the phase_1 baseline against "
+                "the full_train_set checkpoint. Shows whether each category's cross-modal alignment "
+                "moved closer together or stayed the same over training.",
+                style={"color": "#6b7280", "fontSize": "13px", "marginBottom": "12px"},
+            ),
+            dcc.Graph(
+                id="part1-supercategory-dumbbell",
+                figure=build_supercategory_dumbbell(PART1_DATA["supercategory"]),
+            ),
         ]
     )
 else:
-    _part3_layout = html.Div(
+    _part1_layout = html.Div(
         [
             html.P(
-                "Cross-modal data not found. Run: python scripts/generate_mock_crossmodal.py",
+                "Part 1 embeddings not found. Expected under 'data/embeddings part 1/'.",
                 style={"color": "#f87171", "padding": "32px"},
             )
         ]
@@ -453,14 +324,14 @@ app.layout = html.Div(
         ),
         dcc.Tabs(
             id="main-tabs",
-            value="tab-crossmodal",
+            value="tab-part1",
             children=[
                 dcc.Tab(
-                    label="Part 1 — Cross-modal Alignment · DINOv2 × Llama · MS-COCO",
-                    value="tab-crossmodal",
+                    label="Part 1 — Cross-modal Alignment · DINOv2 (Teacher) × Llama-3B (Student) · MS-COCO",
+                    value="tab-part1",
                     style=_tab_style,
                     selected_style=_selected_tab_style,
-                    children=_part3_layout,
+                    children=_part1_layout,
                 ),
                 dcc.Tab(
                     label="Part 2 — RLHF Geometry · Tulu-3-8B SFT → DPO → RLHF",
@@ -468,13 +339,6 @@ app.layout = html.Div(
                     style=_tab_style,
                     selected_style=_selected_tab_style,
                     children=_part2_layout,
-                ),
-                dcc.Tab(
-                    label="Vision Layer Explorer · ResNet-18 vs ViT-B/16",
-                    value="tab-vision",
-                    style=_tab_style,
-                    selected_style=_selected_tab_style,
-                    children=_part1_layout,
                 ),
             ],
             style={"marginBottom": "24px"},
@@ -489,14 +353,8 @@ app.layout = html.Div(
 )
 
 from app.callbacks import register  # noqa: E402
-from app.vision_callbacks import register as register_vision  # noqa: E402
-from app.crossmodal_callbacks import register as register_crossmodal  # noqa: E402
 
 register(app, APP_DATA)
-if VISION_DATA is not None:
-    register_vision(app, VISION_DATA)
-if CROSSMODAL_DATA is not None:
-    register_crossmodal(app, CROSSMODAL_DATA)
 
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False)

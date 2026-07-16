@@ -10,6 +10,7 @@
 #grid(
   columns: (1fr, 1fr, 1fr),
   gutter: 0.7em,
+  align: top,
   [
     #text(weight: "bold", fill: sage, size: 1.1em)[SFT]
     #v(0.2em)
@@ -38,5 +39,5 @@
 
 #v(0.5em)
 #remark[
-  All 3 are the *same* underlying 8B model at 3 successive training stages — not 3 different architectures. This is what makes the SFT → DPO → RLHF comparison a clean trajectory rather than a cross-model comparison.
+  All 3 are the *same* 8B model at successive training stages, not different architectures — a clean trajectory, not a cross-model comparison.
 ]
