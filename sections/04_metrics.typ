@@ -1,7 +1,7 @@
 #import "../helpers.typ": *
 
 // --------------------------------------------------------------------------
-== Part 2 — Mathematical Foundations
+== Part 2 · Mathematical Foundations
 
 #v(0.2em)
 #grid(

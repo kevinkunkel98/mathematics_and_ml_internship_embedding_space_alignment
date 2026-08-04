@@ -2,7 +2,7 @@
 #import "@preview/cetz:0.3.4": canvas, draw
 
 // --------------------------------------------------------------------------
-== Part 1 — Setup: Two Independent Baselines on MS-COCO
+== Part 1 · Setup: Two Independent Baselines on MS-COCO
 
 #v(1fr)
 #align(center)[
@@ -37,7 +37,7 @@
 #v(1fr)
 
 // --------------------------------------------------------------------------
-== Part 1 — Example: MS-COCO 2017
+== Part 1 · Example: MS-COCO 2017
 
 #v(0.3em)
 #grid(
@@ -63,7 +63,7 @@
 )
 
 // --------------------------------------------------------------------------
-== Part 1 — Method: Teacher → Student CKA Fine-tuning
+== Part 1 · Method: Teacher → Student CKA Fine-tuning
 
 #v(1fr)
 #align(center)[

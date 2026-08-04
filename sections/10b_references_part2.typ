@@ -1,7 +1,7 @@
 #import "../helpers.typ": *
 
 // --------------------------------------------------------------------------
-== References — Part 2 (RLHF Geometry)
+== References: Part 2 (RLHF Geometry)
 
 #set text(size: 12pt)
 #v(0.3em)

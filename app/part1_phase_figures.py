@@ -1,8 +1,13 @@
+import numpy as np
+import plotly.colors
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+from app.coco_categories import LABEL_TO_SUPERCATEGORY, SUPERCATEGORIES
+
 _PHASE_LABELS = {"phase1": "phase_1 (baseline)", "full_train": "full_train_set (final)"}
 _PHASE_COLORS = {"phase1": "#636EFA", "full_train": "#00CC96"}
+_SUPERCATEGORY_COLORS = plotly.colors.qualitative.Plotly
 
 
 def build_phase_cka_heatmaps(result: dict) -> go.Figure:
@@ -146,4 +151,42 @@ def build_supercategory_dumbbell(result: dict) -> go.Figure:
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
     fig.update_xaxes(range=[0, 1])
+    return fig
+
+
+def build_part1_umap(Z: np.ndarray, labels: np.ndarray, title: str) -> go.Figure:
+    """Scatter plot of a single layer/phase UMAP projection, colored by COCO supercategory.
+
+    Z:      (N, 2) float32
+    labels: (N,) int — COCO 80-class label ids, mapped to the 12 supercategories.
+    """
+    fig = go.Figure()
+    n = min(len(Z), len(labels))
+    Z, labels = Z[:n], labels[:n]
+    supercats = np.array([LABEL_TO_SUPERCATEGORY[int(l)] for l in labels])
+
+    for i, name in enumerate(SUPERCATEGORIES):
+        mask = supercats == name
+        if not mask.any():
+            continue
+        fig.add_trace(
+            go.Scatter(
+                x=Z[mask, 0],
+                y=Z[mask, 1],
+                mode="markers",
+                name=name,
+                marker=dict(size=5, color=_SUPERCATEGORY_COLORS[i % len(_SUPERCATEGORY_COLORS)], opacity=0.8),
+                hovertemplate=f"{name}<extra></extra>",
+            )
+        )
+
+    fig.update_layout(
+        title=title,
+        template="plotly_dark",
+        xaxis=dict(showticklabels=False, title="UMAP 1"),
+        yaxis=dict(showticklabels=False, title="UMAP 2"),
+        legend=dict(itemsizing="constant", title="Supercategory", font=dict(size=10)),
+        margin=dict(l=40, r=20, t=60, b=40),
+        height=420,
+    )
     return fig

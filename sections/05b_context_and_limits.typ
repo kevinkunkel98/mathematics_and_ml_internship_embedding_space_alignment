@@ -1,7 +1,7 @@
 #import "../helpers.typ": *
 
 // --------------------------------------------------------------------------
-== Part 2 — How Deep Can a Probe Even Go Here?
+== Part 2 · How Deep Can a Probe Even Go Here?
 
 #text(size: 0.85em, fill: luma(90))[Reading the ~0.55 baseline before the flat curves show up]
 
@@ -32,7 +32,7 @@
 #text(size: 0.65em, fill: luma(100))[Sources: Bai et al. 2022 · Stiennon et al. 2020 · reward-model benchmarks on `hh-rlhf`]
 
 // --------------------------------------------------------------------------
-== Part 2 — "No Linear Separation": an RLHF Finding, or a DPO Finding?
+== Part 2 · "No Linear Separation": an RLHF Finding, or a DPO Finding?
 
 #v(0.4em)
 #text(weight: "bold", fill: navy, size: 1em)[Six objectives, side by side]
@@ -49,16 +49,16 @@
 
 #v(0.3em)
 #remark[
-  Our negative finding is likely specific to DPO/PPO-style objectives — not to "RLHF" in general.
+  Our negative finding is likely specific to DPO/PPO-style objectives, not to "RLHF" in general.
 ]
 
 #v(0.2em)
 // Author list confirmed against arxiv.org/abs/2606.09850 (Sinha, Garg, Elluru, Singh, Garg) —
 // still a very recent, not-yet-cited preprint; re-check before final submission.
-#text(size: 0.65em, fill: luma(100))[Source: Sinha et al. 2026 (`arXiv:2606.09850`) — very recent preprint, re-check before citation]
+#text(size: 0.65em, fill: luma(100))[Source: Sinha et al. 2026 (`arXiv:2606.09850`), very recent preprint, re-check before citation]
 
 // --------------------------------------------------------------------------
-== Part 2 — Methodology Check: Pooling Decides a Lot
+== Part 2 · Methodology Check: Pooling Decides a Lot
 
 #v(0.35em)
 #table(
@@ -75,7 +75,7 @@
 #v(0.3em)
 - Our LinearSVC fights prompt-to-prompt variance
 - Paired-difference removes that variance
-- Not a weakness — a deliberately stricter question
+- Not a weakness, a deliberately stricter question
 - "Readable in raw space?" vs. "readable given pairs?"
 
 #v(0.25em)
@@ -89,10 +89,10 @@
 // States" — single author confirmed via arxiv.org. Paired-diff figure (84.5%) matches; that paper's
 // own single-point baseline (21.75%, a different model/method) is not directly comparable to ours
 // and is intentionally left out of this table. Re-check before final submission.
-#text(size: 0.65em, fill: luma(100))[Source: Kirin 2026 (`arXiv:2604.09870`) — very recent preprint, re-check before citation]
+#text(size: 0.65em, fill: luma(100))[Source: Kirin 2026 (`arXiv:2604.09870`), very recent preprint, re-check before citation]
 
 // --------------------------------------------------------------------------
-== Part 2 — CKA Drift Pattern: Not a One-Off
+== Part 2 · CKA Drift Pattern: Not a One-Off
 
 #text(size: 0.85em, fill: luma(90))[Independent cross-domain evidence for "SFT is the real turning point"]
 
@@ -121,10 +121,10 @@
 
 #v(0.3em)
 #text(size: 0.85em, style: "italic", fill: navy)[
-  Our "SFT→DPO is the turning point" finding rhymes elsewhere — strengthens the interpretation.
+  Our "SFT→DPO is the turning point" finding rhymes elsewhere, which strengthens the interpretation.
 ]
 
 #v(0.15em)
 // Both papers are very recent (2026) preprints with a looser thematic fit than a direct replication
 // — treat as loosely-consistent supporting context, not confirmation. Re-check before submission.
-#text(size: 0.65em, fill: luma(100))[Sources: Zhao et al. 2026 (`arXiv:2604.11838`) · Kumar et al. 2026 (`arXiv:2607.08409`) — very recent preprints, re-check before citation]
+#text(size: 0.65em, fill: luma(100))[Sources: Zhao et al. 2026 (`arXiv:2604.11838`) · Kumar et al. 2026 (`arXiv:2607.08409`), very recent preprints, re-check before citation]

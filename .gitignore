@@ -1,8 +1,5 @@
 .venv/
-data/embeddings/
-data/cache/
-data/cifar10/
-data/vision/
+/data/
 __pycache__/
 *.pyc
 .env

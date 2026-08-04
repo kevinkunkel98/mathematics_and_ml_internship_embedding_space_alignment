@@ -24,7 +24,7 @@
     subtitle: [From Vision Transformers to RLHF-Aligned Language Models],
     author: [Huxhold · Pollinger · Kunigk · Kunkel · Charki],
     date: [Summer Semester 2026],
-    institution: [Universität Leipzig — Mathematics & Machine Learning Internship \ Supervisor: Dr. Diaaeldin Taha],
+    institution: [Universität Leipzig, Mathematics & Machine Learning Internship \ Supervisor: Dr. Diaaeldin Taha],
   ),
   footer: [Leipzig, 16.07.2026],
 )
@@ -125,7 +125,7 @@
   #text(size: 10pt, fill: accent)[Summer Semester 2026]
   #v(0.15em)
   #text(size: 10pt, fill: accent)[
-    Universität Leipzig — Mathematics & Machine Learning Internship \
+    Universität Leipzig, Mathematics & Machine Learning Internship \
     Supervisor: Dr. Diaaeldin Taha
   ]
   #v(1fr)

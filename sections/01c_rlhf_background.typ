@@ -1,10 +1,10 @@
 #import "../helpers.typ": *
 
 // --------------------------------------------------------------------------
-== Part 2 — Motivation: Why RLHF?
+== Part 2 · Motivation: Why RLHF?
 
 #v(0.3em)
-#text(size: 0.9em)[Pretraining and SFT optimize *likelihood* — not *preference*.]
+#text(size: 0.9em)[Pretraining and SFT optimize *likelihood*, not *preference*.]
 
 #v(0.5em)
 #grid(
@@ -35,14 +35,14 @@
 
 #v(0.6em)
 #insight([Goal], [
-  Shift probability mass toward responses humans rank higher — without collapsing fluency or drifting into reward hacking.
+  Shift probability mass toward responses humans rank higher, without collapsing fluency or drifting into reward hacking.
 ])
 
 // --------------------------------------------------------------------------
-== Part 2 — Three Steps of RLHF
+== Part 2 · Three Steps of RLHF
 
 #v(0.15em)
-#text(size: 0.8em, fill: luma(90))[Classic formulation (Ouyang et al., 2022 · InstructGPT) — the paradigm Part 2 measures the geometric effect of]
+#text(size: 0.8em, fill: luma(90))[Classic formulation (Ouyang et al., 2022 · InstructGPT): the paradigm Part 2 measures the geometric effect of]
 
 #v(0.3em)
 #grid(
@@ -82,6 +82,6 @@
 #v(0.4em)
 #remark[
   #text(size: 0.85em)[
-    Neither of our checkpoints follows this exactly: DPO skips the reward model entirely, and our "RLHF" checkpoint is actually *RLVR* (rule-based, verifiable rewards, no learned reward model) — kept as "RLHF" only for consistency with Part 1's vocabulary.
+    Neither of our checkpoints follows this exactly: DPO skips the reward model entirely, and our "RLHF" checkpoint is actually *RLVR* (rule-based, verifiable rewards, no learned reward model), kept as "RLHF" only for consistency with Part 1's vocabulary.
   ]
 ]

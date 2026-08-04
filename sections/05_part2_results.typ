@@ -1,7 +1,7 @@
 #import "../helpers.typ": *
 
 // --------------------------------------------------------------------------
-== Part 2 — RLHF Geometry · Real Results
+== Part 2: RLHF Geometry · Real Results
 
 #text(size: 0.85em, fill: luma(90))[Tulu-3-8B SFT → DPO → RLHF · `Anthropic/hh-rlhf` · 4,000 samples · 33 layers]
 
@@ -14,7 +14,7 @@
     #text(weight: "bold", fill: navy, size: 1em)[Negative finding]
     #v(0.25em)
     - Preference not linearly encoded, any stage
-    - LinearSVC peak: 0.543 / 0.544 / 0.550 — near chance
+    - LinearSVC peak: 0.543 / 0.544 / 0.550, near chance
     - No phase transition in preference geometry
   ],
   [

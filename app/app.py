@@ -9,6 +9,7 @@ from dash import Dash, dcc, html
 from scripts.io import load_embeddings
 from app.compute import fit_all
 from app.part1_phase_compute import compute_supercategory_alignment, compute_phase_cka_matrices
+from app.part1_umap_compute import fit_part1_umap
 from app.part1_phase_figures import (
     build_supercategory_dumbbell,
     build_phase_cka_heatmaps,
@@ -64,11 +65,12 @@ _PART1_VISION_PHASE1 = _PART1_DATA_DIR / "vision/llama_3B_coco_multilabel_phase_
 _PART1_VISION_FULL = _PART1_DATA_DIR / "vision/llama_3B_coco_multilabel_full_train_set.h5"
 _PART1_LANGUAGE_PHASE1 = _PART1_DATA_DIR / "language/llama_3B_coco_multilabel_phase_1/layers.h5"
 _PART1_LANGUAGE_FULL = _PART1_DATA_DIR / "language/llama_3B_coco_multilabel_full_train_set/layers.h5"
+_PART1_LANGUAGE_PHASE2 = _PART1_DATA_DIR / "language/llama_3B_coco_multilabel_cka_phase_2/layers.h5"
 
 
 def _load_part1_data() -> dict | None:
     try:
-        for p in (_PART1_VISION_PHASE1, _PART1_VISION_FULL, _PART1_LANGUAGE_PHASE1, _PART1_LANGUAGE_FULL):
+        for p in (_PART1_VISION_PHASE1, _PART1_VISION_FULL, _PART1_LANGUAGE_PHASE1, _PART1_LANGUAGE_FULL, _PART1_LANGUAGE_PHASE2):
             if not p.exists():
                 raise FileNotFoundError(f"Missing {p}")
 
@@ -88,7 +90,16 @@ def _load_part1_data() -> dict | None:
             language_full_path=str(_PART1_LANGUAGE_FULL),
         )
 
-        return {"matrices": matrices, "supercategory": supercategory}
+        print("Fitting Part 1 UMAP projections...")
+        umap = fit_part1_umap(
+            vision_phase1_path=str(_PART1_VISION_PHASE1),
+            vision_full_path=str(_PART1_VISION_FULL),
+            language_phase1_path=str(_PART1_LANGUAGE_PHASE1),
+            language_full_path=str(_PART1_LANGUAGE_FULL),
+            language_phase2_path=str(_PART1_LANGUAGE_PHASE2),
+        )
+
+        return {"matrices": matrices, "supercategory": supercategory, "umap": umap}
     except FileNotFoundError as e:
         print(f"[part1] Skipping Part 1 — {e}")
         return None
@@ -266,6 +277,9 @@ _part2_layout = html.Div(
 # ── Part 1 layout ─────────────────────────────────────────────────────────────
 
 if PART1_DATA is not None:
+    _PART1_VISION_UMAP_LAYERS = sorted(PART1_DATA["umap"]["vision"]["phase1"].keys())
+    _PART1_LANGUAGE_UMAP_LAYERS = sorted(PART1_DATA["umap"]["language"]["phase1"].keys())
+
     _part1_layout = html.Div(
         [
             html.P(
@@ -275,6 +289,77 @@ if PART1_DATA is not None:
                 "Does a shared representational structure emerge — and does it strengthen with training?",
                 style={"color": "#6b7280", "fontSize": "13px", "marginBottom": "12px"},
             ),
+            html.H4("UMAP: Structure by Layer and Training Phase", style={"marginBottom": "4px"}),
+            html.P(
+                "Per-layer 2D UMAP of vision and language activations, colored by COCO "
+                "supercategory. Move the layer slider or switch phase to see whether "
+                "same-category points in the two modalities start occupying similar "
+                "regions of the embedding space as training progresses.",
+                style={"color": "#6b7280", "fontSize": "13px", "marginBottom": "12px"},
+            ),
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            html.Label("Phase", style={"fontWeight": "bold"}),
+                            dcc.RadioItems(
+                                id="part1-vision-phase-selector",
+                                options=[
+                                    {"label": "phase_1 (baseline)", "value": "phase1"},
+                                    {"label": "full_train_set (final)", "value": "full_train"},
+                                ],
+                                value="phase1",
+                                inline=True,
+                                inputStyle={"marginRight": "4px"},
+                                labelStyle={"marginRight": "16px"},
+                            ),
+                            html.Label(id="part1-vision-layer-label", style={"fontWeight": "bold"}),
+                            dcc.Slider(
+                                id="part1-vision-layer-slider",
+                                min=min(_PART1_VISION_UMAP_LAYERS),
+                                max=max(_PART1_VISION_UMAP_LAYERS),
+                                step=1,
+                                value=_PART1_VISION_UMAP_LAYERS[len(_PART1_VISION_UMAP_LAYERS) // 2],
+                                marks={i: str(i) for i in _PART1_VISION_UMAP_LAYERS[::4]},
+                                tooltip={"placement": "bottom", "always_visible": False},
+                            ),
+                            dcc.Graph(id="part1-vision-umap", style={"height": "420px"}),
+                        ],
+                        style={"flex": 1, "marginRight": "16px"},
+                    ),
+                    html.Div(
+                        [
+                            html.Label("Phase", style={"fontWeight": "bold"}),
+                            dcc.RadioItems(
+                                id="part1-language-phase-selector",
+                                options=[
+                                    {"label": "phase_1 (baseline)", "value": "phase1"},
+                                    {"label": "cka_phase_2", "value": "phase2"},
+                                    {"label": "full_train_set (final)", "value": "full_train"},
+                                ],
+                                value="phase1",
+                                inline=True,
+                                inputStyle={"marginRight": "4px"},
+                                labelStyle={"marginRight": "16px"},
+                            ),
+                            html.Label(id="part1-language-layer-label", style={"fontWeight": "bold"}),
+                            dcc.Slider(
+                                id="part1-language-layer-slider",
+                                min=min(_PART1_LANGUAGE_UMAP_LAYERS),
+                                max=max(_PART1_LANGUAGE_UMAP_LAYERS),
+                                step=1,
+                                value=_PART1_LANGUAGE_UMAP_LAYERS[len(_PART1_LANGUAGE_UMAP_LAYERS) // 2],
+                                marks={i: str(i) for i in _PART1_LANGUAGE_UMAP_LAYERS[::4]},
+                                tooltip={"placement": "bottom", "always_visible": False},
+                            ),
+                            dcc.Graph(id="part1-language-umap", style={"height": "420px"}),
+                        ],
+                        style={"flex": 1},
+                    ),
+                ],
+                style={"display": "flex"},
+            ),
+            html.Hr(style={"margin": "24px 0", "borderColor": "#333"}),
             dcc.Graph(
                 id="part1-cka-heatmaps",
                 figure=build_phase_cka_heatmaps(PART1_DATA["matrices"]),
@@ -355,6 +440,11 @@ app.layout = html.Div(
 from app.callbacks import register  # noqa: E402
 
 register(app, APP_DATA)
+
+if PART1_DATA is not None:
+    from app.part1_callbacks import register as register_part1  # noqa: E402
+
+    register_part1(app, PART1_DATA["umap"])
 
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False)

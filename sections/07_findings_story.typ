@@ -1,7 +1,7 @@
 #import "../helpers.typ": *
 
 // --------------------------------------------------------------------------
-== Part 2 — What the Geometry Tells Us
+== Part 2 · What the Geometry Tells Us
 
 #v(0.15em)
 #text(weight: "bold", fill: navy, size: 1em)[No readable linear "preference direction"]

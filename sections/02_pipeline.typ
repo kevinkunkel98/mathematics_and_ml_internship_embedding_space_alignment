@@ -2,7 +2,7 @@
 #import "@preview/cetz:0.3.4": canvas, draw
 
 // --------------------------------------------------------------------------
-== Part 2 — Pipeline: From Dataset to Dashboard
+== Part 2 · Pipeline: From Dataset to Dashboard
 
 #let code(body) = box(
   fill: luma(240),
