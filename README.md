@@ -133,7 +133,18 @@ Open [http://127.0.0.1:8050](http://127.0.0.1:8050).
 
 First launch fits UMAP, t-SNE, LinearSVC, and CKA for all layer combinations (~5–10 min for mock data). Results are cached to `data/cache/` — subsequent launches start in seconds.
 
-### Option B — Real embeddings (requires GPU + HF token)
+### Option B — Prebuilt data (no GPU, real embeddings)
+
+Downloads a prebuilt `data/` archive (all embeddings, cache, CIFAR-10) from Google Drive:
+
+```bash
+python scripts/download_data.py
+python app/app.py
+```
+
+Fetches from a shared Drive link. Override with `--file-id <id>` or `DATA_GDRIVE_ID` env var if the file moves.
+
+### Option C — Real embeddings (requires GPU + HF token)
 
 **Part 1 — Vision:**
 
