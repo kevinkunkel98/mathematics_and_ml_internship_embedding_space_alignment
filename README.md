@@ -15,9 +15,9 @@ This project investigates whether a **shared representational structure** emerge
 
 Both parts are surfaced in a single **interactive Plotly Dash dashboard**.
 
-| Part 1 — CKA: Vision vs. Language | Part 2 — UMAP: RLHF Embedding Space |
+| Part 1 — Vision UMAP (DINOv2, real data) | Part 1 — Cross-modal CKA by supercategory |
 |:---:|:---:|
-| ![CKA Heatmap](assets/slides/cka_heatmap.png) | ![UMAP Scatter](assets/slides/umap_scatter.png) |
+| ![DINOv2 UMAP](assets/slides/dino.png) | ![Cross-modal CKA](assets/slides/part1.png) |
 
 ---
 
@@ -31,6 +31,27 @@ Both parts are surfaced in a single **interactive Plotly Dash dashboard**.
 | Language | Does RLHF geometrically separate preferred from rejected responses? | LinearSVC per layer across 32 layers |
 | Language | How does this geometric separation evolve layer by layer? | UMAP scatter · layer slider |
 | Language | Does RLHF alignment shift language representations toward visual geometry? | Cross-modal CKA: base vs. Instruct vs. CLIP |
+
+---
+
+## Results
+
+### Part 1 — Cross-modal alignment: built by training, not inherited
+
+Baseline (no cross-modal fine-tuning) CKA between DINOv2 and Llama-3-8B is near-zero everywhere: mean 0.005, max 0.007, no depth structure. After CKA fine-tuning, mean CKA rises to 0.048 (max 0.176) — roughly **25×** higher. The peak stays at the *same* layer pair (vision layer 16 × language layer 28) before and after: training amplifies an existing affinity rather than creating one elsewhere. This contradicts a naive reading of the Platonic Representation Hypothesis — untrained models do not already converge to a shared representation.
+
+By COCO supercategory, 11 of 12 gained alignment after fine-tuning (`outdoor` flat, none regressed). Biggest movers: **vehicle** (+0.21), **person** (+0.13).
+
+### Part 2 — RLHF geometry: no linear preference direction, but real reorganization
+
+Across Tulu-3-8B SFT → DPO → RLHF (`Anthropic/hh-rlhf`, 4,000 samples, 33 layers), a LinearSVC probe never separates chosen from rejected responses above chance: peak accuracy 0.543 / 0.544 / 0.550 across the three checkpoints, flat at every layer. Preference is not linearly encoded at any training stage.
+
+The embedding geometry still shifts substantially: CKA(SFT, DPO) drops to 0.976 by layer 32, while CKA(DPO, RLHF) stays near 0.999. Most of the geometric reorganization happens in the SFT → DPO transition, not during PPO — alignment reshapes representations globally rather than carving out a single separating axis.
+
+### Known limitations
+
+- **Part 1:** float16 overflow during extraction corrupted later vision layers and most `phase_1` language layers (`inf` values).
+- **Part 2:** last-token pooling only; paired-difference probes reach ~84% in the literature vs. our ~55% peak — pooling strategy likely accounts for the gap.
 
 ---
 
@@ -103,7 +124,7 @@ data/
   vision/                 # Vision HDF5 files (gitignored)
   cache/                  # Projection + CKA cache (gitignored)
 assets/
-  slides/                 # Exported PNGs for slides (gitignored)
+  slides/                 # Exported PNGs for slides (tracked in git)
 ```
 
 ### Setup
