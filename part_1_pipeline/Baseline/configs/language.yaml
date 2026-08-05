@@ -1,0 +1,11 @@
+# configs/llama_3b.yaml
+model_id: "meta-llama/Llama-3.2-3B-Instruct"
+m_type: "language"
+probe_layer: 16
+token: ""
+hidden_dim: 3072  ### depends on model chosen 
+lora: 
+  lora_r: 16
+  lora_alpha: 32
+  target_modules: ["q_proj", "v_proj"]
+  task_type: "CAUSAL_LM"

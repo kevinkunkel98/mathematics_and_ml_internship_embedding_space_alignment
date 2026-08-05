@@ -1,0 +1,9 @@
+# configs/dinov2.yaml
+model_id: "facebook/dinov2-large"
+m_type: "vision"
+probe_layer: 20
+hidden_dim: 1024
+lora:
+  lora_r: 8
+  lora_alpha: 16
+  target_modules: ["query", "value"]

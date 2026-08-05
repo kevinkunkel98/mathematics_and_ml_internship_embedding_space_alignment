@@ -1,0 +1,27 @@
+model: 
+    m_type : "vision"
+    checkpoint_path : "./models/vision"
+
+running_params: 
+    batch_size : 32
+    shuffle : true
+    n_workers : 4 
+    lr : 0.01
+    n_epochs : 100 
+    patience : 10
+    device: "cuda:0"
+
+log_params: 
+    hug_password : ""
+    HUGGING_FACE_HUB_TOKEN : ""
+
+data:
+    path : './data/coco_data'
+    n_classes : 80
+    experiment_name : "llama_3B_coco_multilabel_full_train_set"
+    # Welcher Split geladen wird. Muss zu den Dateinamen passen, die coco_split.py erzeugt:
+    #   instances_<split>.json / captions_<split>.json
+    # Die Bilder liegen weiterhin in 'train2017/' (das '_phaseN'-Suffix wird fuer den
+    # Bildordner automatisch entfernt).
+    train_split : "train2017"   # Phase 1 zum Trainieren
+    test_split  : "val2017"   # Phase 2 zum Testen

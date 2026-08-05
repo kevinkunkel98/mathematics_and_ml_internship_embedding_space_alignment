@@ -1,0 +1,27 @@
+model: 
+    m_type : "language"
+    checkpoint_path : "./models/alignment"
+
+running_params: 
+    batch_size : 32
+    shuffle : true
+    n_workers : 4 
+    lr : 0.0001
+    n_epochs : 100 
+    patience : 10 
+    device: "cuda:0"
+    alpha: 0.5
+    beta: 0.5
+
+log_params: 
+    hug_password: ""
+    HUGGING_FACE_HUB_TOKEN: ""
+
+data:
+    path : './data/coco_data'
+    n_classes : 80
+    experiment_name : "llama_3B_coco_multilabel_cka_phase_2"
+    # Welcher Split geladen wird. Muss zu den Dateinamen passen, die coco_split.py erzeugt:
+    #   instances_<split>.json / captions_<split>.json
+    train_split : "train2017_phase2"   # Phase 2 zum Trainieren mit CKA 
+    test_split  : "val2014"   # Validation zum Testen
